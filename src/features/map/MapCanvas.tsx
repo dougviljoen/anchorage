@@ -6,6 +6,7 @@ import { MapFallback } from './MapFallback'
 import { createMarkerContent } from './map-markers'
 import { planThreadRoute } from './thread-route-plan'
 import { buildThreadRouteOverlay } from './route-overlay'
+import { getRouteVisualPriority } from './route-visual-priority'
 import type {
   MapMode,
   PositionState,
@@ -455,16 +456,18 @@ export function MapCanvas({
                 ).segments
               : []
 
-        const activeLegIndex = Math.min(
-          ...routeSegments.map((segment) => segment.legIndex),
+        const activeLegIndex =
+          routeSegments.reduce(
+            (first, segment) => Math.min(first, segment.legIndex),
+            Number.POSITIVE_INFINITY,
         )
 
         routeSegments.forEach((segment) => {
-          const legDistance = Math.max(
-            0,
-            segment.legIndex - activeLegIndex,
+          const priority = getRouteVisualPriority(
+            segment.legIndex,
+            activeLegIndex,
           )
-          const isCurrentLeg = legDistance === 0
+          const isCurrentLeg = priority.isCurrent
           const isTrain =
             segment.travelMode === 'TRANSIT' &&
             segment.transitModes?.some((mode) =>
@@ -478,27 +481,17 @@ export function MapCanvas({
             : isBus
               ? '#8a5a44'
               : segment.travelMode === 'WALK'
-                ? '#52635b'
+                ? '#485c52'
                 : segment.travelMode === 'BICYCLE'
                   ? '#4f6f5d'
                   : '#6d655c'
           const color = isCurrentLeg ? '#1f573b' : futureColor
-          const sourceOpacity =
-            segment.source === 'live'
-              ? 0.92
-              : segment.source === 'curated'
-                ? 0.76
-                : 0.58
-          const opacity = isCurrentLeg
-            ? Math.max(0.82, sourceOpacity)
-            : Math.max(0.2, sourceOpacity * (0.62 - legDistance * 0.055))
-          const routeZIndex = isCurrentLeg ? 6 : 4
+          const routeZIndex = priority.zIndex
+
           addPolyline(segment.path, {
             strokeColor: '#f4f0e5',
-            strokeOpacity: isCurrentLeg
-              ? 0.96
-              : Math.max(0.32, opacity + 0.12),
-            strokeWeight: isCurrentLeg ? 10 : 8,
+            strokeOpacity: priority.casingOpacity,
+            strokeWeight: priority.casingWeight,
             zIndex: routeZIndex - 1,
           })
 
@@ -508,46 +501,89 @@ export function MapCanvas({
           ) {
             addPolyline(segment.path, {
               strokeColor: color,
-              strokeOpacity: opacity,
-              strokeWeight: isCurrentLeg ? 4 : isTrain ? 3.25 : 2.75,
+              strokeOpacity: priority.opacity,
+              strokeWeight: isTrain
+                ? Math.max(priority.strokeWeight, 3.5)
+                : priority.strokeWeight,
               zIndex: routeZIndex,
             })
-            return
+          } else {
+            const isWalking = segment.travelMode === 'WALK'
+            addPolyline(segment.path, {
+              strokeOpacity: 0,
+              strokeWeight: 0,
+              icons: [
+                {
+                  icon: {
+                    ...dashedLine,
+                    path: isWalking
+                      ? google.maps.SymbolPath.CIRCLE
+                      : dashedLine.path,
+                    scale: isWalking
+                      ? isCurrentLeg
+                        ? 1.8
+                        : 1.45
+                      : isCurrentLeg
+                        ? 2.35
+                        : 2.05,
+                    strokeColor: color,
+                    strokeOpacity: priority.opacity,
+                  },
+                  offset: '0',
+                  repeat: isWalking
+                    ? isCurrentLeg
+                      ? '9px'
+                      : '10px'
+                    : isBus
+                      ? '17px'
+                      : '13px',
+                },
+              ],
+              zIndex: routeZIndex,
+            })
           }
 
-          const isWalking = segment.travelMode === 'WALK'
-          addPolyline(segment.path, {
-            strokeOpacity: 0,
-            strokeWeight: 0,
-            icons: [
-              {
-                icon: {
-                  ...dashedLine,
-                  path: isWalking
-                    ? google.maps.SymbolPath.CIRCLE
-                    : dashedLine.path,
-                  scale: isWalking
-                    ? isCurrentLeg
-                      ? 1.7
-                      : 1.3
-                    : isCurrentLeg
-                      ? 2.25
-                      : 1.9,
-                  strokeColor: color,
-                  strokeOpacity: opacity,
+          if (isCurrentLeg) {
+            addPolyline(segment.path, {
+              strokeOpacity: 0,
+              strokeWeight: 0,
+              icons: [
+                {
+                  icon: {
+                    path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                    scale: 2.2,
+                    fillColor: color,
+                    fillOpacity: 0.96,
+                    strokeColor: '#f4f0e5',
+                    strokeOpacity: 0.98,
+                    strokeWeight: 1.2,
+                  },
+                  offset: '58%',
                 },
-                offset: '0',
-                repeat: isWalking
-                  ? isCurrentLeg
-                    ? '9px'
-                    : '11px'
-                  : isBus
-                    ? '17px'
-                    : '13px',
-              },
-            ],
-            zIndex: routeZIndex,
-          })
+              ],
+              zIndex: routeZIndex + 1,
+            })
+          } else {
+            addPolyline(segment.path, {
+              strokeOpacity: 0,
+              strokeWeight: 0,
+              icons: [
+                {
+                  icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 2,
+                    fillColor: '#f4f0e5',
+                    fillOpacity: 1,
+                    strokeColor: color,
+                    strokeOpacity: priority.opacity,
+                    strokeWeight: 1.4,
+                  },
+                  offset: '0',
+                },
+              ],
+              zIndex: routeZIndex + 1,
+            })
+          }
         })
 
         selectedThread.stops.forEach((stop, index) => {

@@ -28,6 +28,12 @@ An explicitly bus-only leg may use road-aligned driving geometry as a visibly
 estimated fallback because both services follow the street network.
 Successful walking legs still render against the live street network.
 
+Route provenance and route priority are separate visual concerns. The map uses
+weight, casing and a directional mark to emphasize the current leg; every
+upcoming leg retains the same substantial opacity regardless of how far ahead
+it occurs. Live, verified and estimated confidence remains explicit in the
+route status instead of making later parts of the journey disappear.
+
 ### `search-places`
 
 Accepts one focused text query and either:
