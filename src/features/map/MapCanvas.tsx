@@ -454,6 +454,7 @@ export function MapCanvas({
                   travelMode: request.travelMode,
                   transitModes: request.input.transitModes,
                   source: request.fallbackSource,
+                  roundTrip: false,
                 }))
               : []
 
@@ -481,6 +482,35 @@ export function MapCanvas({
               : segment.source === 'curated'
                 ? 0.76
                 : 0.58
+          const directionIcons: google.maps.IconSequence[] =
+            segment.roundTrip
+              ? [
+                  {
+                    icon: {
+                      path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                      fillColor: color,
+                      fillOpacity: opacity,
+                      strokeColor: '#f4f0e5',
+                      strokeOpacity: 0.9,
+                      strokeWeight: 1,
+                      scale: 2.6,
+                    },
+                    offset: '38%',
+                  },
+                  {
+                    icon: {
+                      path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+                      fillColor: color,
+                      fillOpacity: opacity,
+                      strokeColor: '#f4f0e5',
+                      strokeOpacity: 0.9,
+                      strokeWeight: 1,
+                      scale: 2.6,
+                    },
+                    offset: '62%',
+                  },
+                ]
+              : []
 
           addPolyline(segment.path, {
             strokeColor: '#f4f0e5',
@@ -497,6 +527,7 @@ export function MapCanvas({
               strokeColor: color,
               strokeOpacity: opacity,
               strokeWeight: isTrain ? 3.5 : 3,
+              icons: directionIcons,
               zIndex: 4,
             })
             return
@@ -520,6 +551,7 @@ export function MapCanvas({
                 offset: '0',
                 repeat: isWalking ? '10px' : isBus ? '17px' : '13px',
               },
+              ...directionIcons,
             ],
             zIndex: 4,
           })

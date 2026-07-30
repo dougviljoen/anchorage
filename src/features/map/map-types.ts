@@ -22,6 +22,7 @@ export type ThreadRouteSegment = {
   travelMode: TravelMode
   transitModes?: TransitMode[]
   source: 'live' | 'curated' | 'estimated'
+  roundTrip?: boolean
 }
 
 export type ThreadRouteOverlay = {
@@ -33,6 +34,7 @@ export type ThreadRouteOverlay = {
   liveModes: TravelMode[]
   curatedModes: TravelMode[]
   estimatedModes: TravelMode[]
+  roundTripModes: TravelMode[]
   fullyLive: boolean
   fetchedAt: string
 }

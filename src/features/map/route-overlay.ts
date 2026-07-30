@@ -1,5 +1,5 @@
 import { decodePolyline } from '../../lib/polyline'
-import type { TravelMode } from '../../domain/types'
+import type { Coordinates, TravelMode } from '../../domain/types'
 import type {
   LiveRoute,
   LiveRouteResponse,
@@ -13,6 +13,8 @@ import type {
 import type { ThreadRouteRequest } from './thread-route-plan'
 
 const maximumAnnotations = 4
+const japaneseText =
+  /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u
 
 const conciseInstruction = (instruction: string) => {
   const routeName = instruction.match(
@@ -34,7 +36,7 @@ const chooseAnnotations = (steps: LiveRouteStep[]): RouteAnnotation[] => {
 
     const label = conciseInstruction(step.instruction)
     const identity = label.toLocaleLowerCase()
-    if (!label || seen.has(identity)) return []
+    if (!label || japaneseText.test(label) || seen.has(identity)) return []
     seen.add(identity)
 
     return [{ coordinates: step.start, label }]
@@ -59,18 +61,18 @@ export type ThreadRouteResult = {
 const uniqueModes = (modes: TravelMode[]) => [...new Set(modes)]
 
 const sameCoordinates = (
-  left: { latitude: number; longitude: number },
-  right: { latitude: number; longitude: number },
+  left: Coordinates,
+  right: Coordinates,
 ) =>
   Math.abs(left.latitude - right.latitude) < 0.000001 &&
   Math.abs(left.longitude - right.longitude) < 0.000001
 
 const stitchLogicalEndpoints = (
-  path: { latitude: number; longitude: number }[],
-  request: ThreadRouteRequest,
+  path: Coordinates[],
+  origin: Coordinates,
+  destination: Coordinates,
 ) => {
   const stitched = [...path]
-  const { origin, destination } = request.input
 
   if (!sameCoordinates(stitched[0], origin)) stitched.unshift(origin)
   if (!sameCoordinates(stitched[stitched.length - 1], destination)) {
@@ -80,17 +82,19 @@ const stitchLogicalEndpoints = (
   return stitched
 }
 
-const routeSegment = (
-  route: LiveRoute,
+const segmentFromPolyline = (
+  encodedPolyline: string,
   request: ThreadRouteRequest,
   source: ThreadRouteSegment['source'],
+  origin: Coordinates,
+  destination: Coordinates,
 ): ThreadRouteSegment | undefined => {
   try {
-    const path = decodePolyline(route.encodedPolyline)
+    const path = decodePolyline(encodedPolyline)
     if (path.length < 2) return undefined
 
     return {
-      path: stitchLogicalEndpoints(path, request),
+      path: stitchLogicalEndpoints(path, origin, destination),
       travelMode: request.travelMode,
       transitModes: request.input.transitModes,
       source,
@@ -100,32 +104,169 @@ const routeSegment = (
   }
 }
 
+const routeSegments = (
+  route: LiveRoute,
+  request: ThreadRouteRequest,
+  source: ThreadRouteSegment['source'],
+): ThreadRouteSegment[] => {
+  const logicalPoints = request.fallbackPath
+  if (
+    route.legs.length === logicalPoints.length - 1 &&
+    route.legs.every((leg) => leg.encodedPolyline)
+  ) {
+    return route.legs.flatMap((leg, index) => {
+      const segment = segmentFromPolyline(
+        leg.encodedPolyline,
+        request,
+        source,
+        logicalPoints[index],
+        logicalPoints[index + 1],
+      )
+      return segment ? [segment] : []
+    })
+  }
+
+  const segment = segmentFromPolyline(
+    route.encodedPolyline,
+    request,
+    source,
+    request.input.origin,
+    request.input.destination,
+  )
+  return segment ? [segment] : []
+}
+
+const fallbackSegments = (
+  request: ThreadRouteRequest,
+): ThreadRouteSegment[] => {
+  const base = {
+    travelMode: request.travelMode,
+    transitModes: request.input.transitModes,
+    source: request.fallbackSource,
+  }
+
+  if (
+    request.fallbackSource === 'estimated' &&
+    request.fallbackPath.length > 2
+  ) {
+    return request.fallbackPath.slice(1).map((destination, index) => ({
+      ...base,
+      path: [request.fallbackPath[index], destination],
+    }))
+  }
+
+  return [{ ...base, path: request.fallbackPath }]
+}
+
+const distanceMeters = (left: Coordinates, right: Coordinates) => {
+  const averageLatitude =
+    ((left.latitude + right.latitude) / 2) * (Math.PI / 180)
+  const latitudeMeters = (right.latitude - left.latitude) * 110_540
+  const longitudeMeters =
+    (right.longitude - left.longitude) *
+    111_320 *
+    Math.cos(averageLatitude)
+
+  return Math.hypot(latitudeMeters, longitudeMeters)
+}
+
+const sampledPath = (path: Coordinates[]) => {
+  const stride = Math.max(1, Math.floor(path.length / 20))
+  return path.filter(
+    (_, index) => index % stride === 0 || index === path.length - 1,
+  )
+}
+
+const followsSameGeometry = (
+  left: Coordinates[],
+  right: Coordinates[],
+) =>
+  sampledPath(left).every(
+    (point) =>
+      Math.min(...right.map((candidate) => distanceMeters(point, candidate))) <
+      35,
+  )
+
+const areReciprocal = (
+  left: ThreadRouteSegment,
+  right: ThreadRouteSegment,
+) => {
+  const leftStart = left.path[0]
+  const leftEnd = left.path.at(-1)
+  const rightStart = right.path[0]
+  const rightEnd = right.path.at(-1)
+  if (!leftEnd || !rightEnd) return false
+
+  return (
+    left.travelMode === right.travelMode &&
+    [...(left.transitModes ?? [])].sort().join(',') ===
+      [...(right.transitModes ?? [])].sort().join(',') &&
+    distanceMeters(leftStart, rightEnd) < 35 &&
+    distanceMeters(leftEnd, rightStart) < 35 &&
+    followsSameGeometry(left.path, right.path) &&
+    followsSameGeometry(right.path, left.path)
+  )
+}
+
+const sourceRank: Record<ThreadRouteSegment['source'], number> = {
+  estimated: 0,
+  curated: 1,
+  live: 2,
+}
+
+const collapseReciprocalSegments = (
+  segments: ThreadRouteSegment[],
+): ThreadRouteSegment[] => {
+  const consumed = new Set<number>()
+
+  return segments.flatMap((segment, index) => {
+    if (consumed.has(index)) return []
+
+    const reciprocalIndex = segments.findIndex(
+      (candidate, candidateIndex) =>
+        candidateIndex > index &&
+        !consumed.has(candidateIndex) &&
+        areReciprocal(segment, candidate),
+    )
+    if (reciprocalIndex < 0) return [segment]
+
+    consumed.add(reciprocalIndex)
+    const reciprocal = segments[reciprocalIndex]
+    return [
+      {
+        ...segment,
+        source:
+          sourceRank[reciprocal.source] > sourceRank[segment.source]
+            ? reciprocal.source
+            : segment.source,
+        roundTrip: true,
+      },
+    ]
+  })
+}
+
 export function buildThreadRouteOverlay(
   results: ThreadRouteResult[],
 ): ThreadRouteOverlay {
-  const segments = results.map(
+  const rawSegments = results.flatMap(
     ({ request, response, estimatedResponse }) => {
       if (response) {
-        const segment = routeSegment(response.route, request, 'live')
-        if (segment) return segment
+        const segments = routeSegments(response.route, request, 'live')
+        if (segments.length > 0) return segments
       }
       if (estimatedResponse) {
-        const segment = routeSegment(
+        const segments = routeSegments(
           estimatedResponse.route,
           request,
           'estimated',
         )
-        if (segment) return segment
+        if (segments.length > 0) return segments
       }
 
-      return {
-        path: request.fallbackPath,
-        travelMode: request.travelMode,
-        transitModes: request.input.transitModes,
-        source: request.fallbackSource,
-      }
+      return fallbackSegments(request)
     },
   )
+  const segments = collapseReciprocalSegments(rawSegments)
   const liveResponses = results.flatMap(({ response }) =>
     response ? [response] : [],
   )
@@ -137,6 +278,9 @@ export function buildThreadRouteOverlay(
   )
   const estimatedModes = segments.flatMap((segment) =>
     segment.source === 'estimated' ? [segment.travelMode] : [],
+  )
+  const roundTripModes = segments.flatMap((segment) =>
+    segment.roundTrip ? [segment.travelMode] : [],
   )
   const steps = liveResponses.flatMap(({ route }) =>
     route.legs.flatMap((leg) => leg.steps),
@@ -164,6 +308,7 @@ export function buildThreadRouteOverlay(
     liveModes: uniqueModes(liveModes),
     curatedModes: uniqueModes(curatedModes),
     estimatedModes: uniqueModes(estimatedModes),
+    roundTripModes: uniqueModes(roundTripModes),
     fullyLive:
       curatedModes.length === 0 && estimatedModes.length === 0,
     fetchedAt:

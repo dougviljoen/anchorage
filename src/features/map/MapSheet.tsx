@@ -253,6 +253,8 @@ function ThreadOverview({
                 ` · ${modeSummary(threadRoute.overlay.estimatedModes)} estimated`}
             </>
           )}
+          {threadRoute.overlay.roundTripModes.length > 0 &&
+            ' · return follows the same route'}
         </p>
       )}
 
