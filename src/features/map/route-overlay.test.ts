@@ -2,6 +2,39 @@ import { describe, expect, it } from 'vitest'
 import type { ThreadRouteRequest } from './thread-route-plan'
 import { buildThreadRouteOverlay } from './route-overlay'
 
+const encodePolyline = (
+  points: Array<{ latitude: number; longitude: number }>,
+) => {
+  let previousLatitude = 0
+  let previousLongitude = 0
+
+  const encodeValue = (value: number) => {
+    let encoded = ''
+    let shifted = value < 0 ? ~(value << 1) : value << 1
+
+    while (shifted >= 0x20) {
+      encoded += String.fromCharCode((0x20 | (shifted & 0x1f)) + 63)
+      shifted >>= 5
+    }
+
+    return encoded + String.fromCharCode(shifted + 63)
+  }
+
+  return points
+    .map(({ latitude, longitude }) => {
+      const nextLatitude = Math.round(latitude * 100_000)
+      const nextLongitude = Math.round(longitude * 100_000)
+      const encoded =
+        encodeValue(nextLatitude - previousLatitude) +
+        encodeValue(nextLongitude - previousLongitude)
+
+      previousLatitude = nextLatitude
+      previousLongitude = nextLongitude
+      return encoded
+    })
+    .join('')
+}
+
 const walkingRequest: ThreadRouteRequest = {
   input: {
     origin: { latitude: 38.5, longitude: -120.2 },
@@ -177,6 +210,77 @@ describe('buildThreadRouteOverlay', () => {
       transitModes: ['TRAIN'],
       source: 'curated',
     })
+  })
+
+  it('draws a partially merged walking route only once', () => {
+    const south = { latitude: 36, longitude: 136 }
+    const firstMerge = { latitude: 36.001, longitude: 136 }
+    const secondMerge = { latitude: 36.002, longitude: 136 }
+    const station = { latitude: 36.003, longitude: 136 }
+    const dinner = { latitude: 36.001, longitude: 136.001 }
+    const firstMergeOffset = {
+      latitude: firstMerge.latitude,
+      longitude: firstMerge.longitude + 0.00002,
+    }
+    const secondMergeOffset = {
+      latitude: secondMerge.latitude,
+      longitude: secondMerge.longitude + 0.00002,
+    }
+    const outboundPath = [south, firstMerge, secondMerge, station]
+    const returnPath = [
+      station,
+      secondMergeOffset,
+      firstMergeOffset,
+      dinner,
+    ]
+    const outboundRequest: ThreadRouteRequest = {
+      input: {
+        origin: south,
+        destination: station,
+        travelMode: 'WALK',
+      },
+      fallbackPath: [south, station],
+      fallbackSource: 'estimated',
+      travelMode: 'WALK',
+    }
+    const returnRequest: ThreadRouteRequest = {
+      input: {
+        origin: station,
+        destination: dinner,
+        travelMode: 'WALK',
+      },
+      fallbackPath: [station, dinner],
+      fallbackSource: 'estimated',
+      travelMode: 'WALK',
+    }
+    const asResponse = (
+      path: Array<{ latitude: number; longitude: number }>,
+    ) => ({
+      provider: 'google' as const,
+      fetchedAt: '2026-07-30T04:00:00Z',
+      route: {
+        distanceMeters: 500,
+        durationSeconds: 420,
+        encodedPolyline: encodePolyline(path),
+        legs: [
+          {
+            distanceMeters: 500,
+            durationSeconds: 420,
+            encodedPolyline: encodePolyline(path),
+            steps: [],
+          },
+        ],
+      },
+    })
+
+    const overlay = buildThreadRouteOverlay([
+      { request: outboundRequest, response: asResponse(outboundPath) },
+      { request: returnRequest, response: asResponse(returnPath) },
+    ])
+
+    expect(overlay.segments).toHaveLength(2)
+    expect(overlay.segments[0].path).toEqual(outboundPath)
+    expect(overlay.segments[1].path).toEqual([firstMergeOffset, dinner])
   })
 
   it('uses road-aligned provider geometry only as an estimated bus path', () => {

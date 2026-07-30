@@ -170,6 +170,14 @@ const distanceMeters = (left: Coordinates, right: Coordinates) => {
   return Math.hypot(latitudeMeters, longitudeMeters)
 }
 
+const sameSegmentStyle = (
+  left: ThreadRouteSegment,
+  right: ThreadRouteSegment,
+) =>
+  left.travelMode === right.travelMode &&
+  [...(left.transitModes ?? [])].sort().join(',') ===
+    [...(right.transitModes ?? [])].sort().join(',')
+
 const sampledPath = (path: Coordinates[]) => {
   const stride = Math.max(1, Math.floor(path.length / 20))
   return path.filter(
@@ -198,9 +206,7 @@ const areReciprocal = (
   if (!leftEnd || !rightEnd) return false
 
   return (
-    left.travelMode === right.travelMode &&
-    [...(left.transitModes ?? [])].sort().join(',') ===
-      [...(right.transitModes ?? [])].sort().join(',') &&
+    sameSegmentStyle(left, right) &&
     distanceMeters(leftStart, rightEnd) < 35 &&
     distanceMeters(leftEnd, rightStart) < 35 &&
     followsSameGeometry(left.path, right.path) &&
@@ -244,6 +250,128 @@ const collapseReciprocalSegments = (
   })
 }
 
+const sharedGeometryThresholdMeters = 8
+const sharedGeometrySampleIntervalMeters = 6
+
+const interpolateCoordinates = (
+  start: Coordinates,
+  end: Coordinates,
+  fraction: number,
+): Coordinates => ({
+  latitude: start.latitude + (end.latitude - start.latitude) * fraction,
+  longitude: start.longitude + (end.longitude - start.longitude) * fraction,
+})
+
+const pointToEdgeDistanceMeters = (
+  point: Coordinates,
+  start: Coordinates,
+  end: Coordinates,
+) => {
+  const averageLatitude =
+    ((point.latitude + start.latitude + end.latitude) / 3) *
+    (Math.PI / 180)
+  const longitudeScale = 111_320 * Math.cos(averageLatitude)
+  const pointX = point.longitude * longitudeScale
+  const pointY = point.latitude * 110_540
+  const startX = start.longitude * longitudeScale
+  const startY = start.latitude * 110_540
+  const endX = end.longitude * longitudeScale
+  const endY = end.latitude * 110_540
+  const deltaX = endX - startX
+  const deltaY = endY - startY
+  const lengthSquared = deltaX ** 2 + deltaY ** 2
+  const fraction =
+    lengthSquared === 0
+      ? 0
+      : Math.max(
+          0,
+          Math.min(
+            1,
+            ((pointX - startX) * deltaX +
+              (pointY - startY) * deltaY) /
+              lengthSquared,
+          ),
+        )
+
+  return Math.hypot(
+    pointX - (startX + fraction * deltaX),
+    pointY - (startY + fraction * deltaY),
+  )
+}
+
+const pointToPathDistanceMeters = (
+  point: Coordinates,
+  path: Coordinates[],
+) =>
+  path.slice(1).reduce(
+    (nearest, end, index) =>
+      Math.min(
+        nearest,
+        pointToEdgeDistanceMeters(point, path[index], end),
+      ),
+    Number.POSITIVE_INFINITY,
+  )
+
+const edgeIsCovered = (
+  start: Coordinates,
+  end: Coordinates,
+  paths: Coordinates[][],
+) => {
+  const sampleCount = Math.max(
+    1,
+    Math.ceil(
+      distanceMeters(start, end) / sharedGeometrySampleIntervalMeters,
+    ),
+  )
+
+  return Array.from({ length: sampleCount + 1 }, (_, index) =>
+    interpolateCoordinates(start, end, index / sampleCount),
+  ).every(
+    (point) =>
+      Math.min(
+        ...paths.map((path) => pointToPathDistanceMeters(point, path)),
+      ) < sharedGeometryThresholdMeters,
+  )
+}
+
+const removeSharedGeometry = (
+  segment: ThreadRouteSegment,
+  existing: ThreadRouteSegment[],
+): ThreadRouteSegment[] => {
+  const sharedStylePaths = existing
+    .filter((candidate) => sameSegmentStyle(segment, candidate))
+    .map((candidate) => candidate.path)
+
+  if (sharedStylePaths.length === 0) return [segment]
+
+  const runs: Coordinates[][] = []
+  let activeRun: Coordinates[] | undefined
+
+  segment.path.slice(1).forEach((end, index) => {
+    const start = segment.path[index]
+    if (edgeIsCovered(start, end, sharedStylePaths)) {
+      if (activeRun && activeRun.length > 1) runs.push(activeRun)
+      activeRun = undefined
+      return
+    }
+
+    if (!activeRun) activeRun = [start]
+    activeRun.push(end)
+  })
+
+  if (activeRun && activeRun.length > 1) runs.push(activeRun)
+
+  return runs.map((path) => ({ ...segment, path }))
+}
+
+const collapseSharedGeometry = (
+  segments: ThreadRouteSegment[],
+): ThreadRouteSegment[] =>
+  segments.reduce<ThreadRouteSegment[]>((visible, segment) => {
+    visible.push(...removeSharedGeometry(segment, visible))
+    return visible
+  }, [])
+
 export function buildThreadRouteOverlay(
   results: ThreadRouteResult[],
 ): ThreadRouteOverlay {
@@ -265,7 +393,9 @@ export function buildThreadRouteOverlay(
       return fallbackSegments(request)
     },
   )
-  const segments = collapseReciprocalSegments(rawSegments)
+  const segments = collapseSharedGeometry(
+    collapseReciprocalSegments(rawSegments),
+  )
   const liveResponses = results.flatMap(({ response }) =>
     response ? [response] : [],
   )
