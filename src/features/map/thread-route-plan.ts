@@ -9,6 +9,7 @@ export type ThreadRouteRequest = {
   input: ComputeRouteInput
   fallbackPath: Coordinates[]
   fallbackSource: 'curated' | 'estimated'
+  startLegIndex: number
   travelMode: TravelMode
 }
 
@@ -104,6 +105,7 @@ export function planThreadRoute(
       },
       fallbackPath,
       fallbackSource: curatedPath ? 'curated' : 'estimated',
+      startLegIndex: edgeIndex,
       travelMode,
     })
 

@@ -455,7 +455,16 @@ export function MapCanvas({
                 ).segments
               : []
 
+        const activeLegIndex = Math.min(
+          ...routeSegments.map((segment) => segment.legIndex),
+        )
+
         routeSegments.forEach((segment) => {
+          const legDistance = Math.max(
+            0,
+            segment.legIndex - activeLegIndex,
+          )
+          const isCurrentLeg = legDistance === 0
           const isTrain =
             segment.travelMode === 'TRANSIT' &&
             segment.transitModes?.some((mode) =>
@@ -464,26 +473,33 @@ export function MapCanvas({
           const isBus =
             segment.travelMode === 'TRANSIT' &&
             segment.transitModes?.includes('BUS')
-          const color = isTrain
+          const futureColor = isTrain
             ? '#516572'
             : isBus
               ? '#8a5a44'
               : segment.travelMode === 'WALK'
-                ? '#29483a'
+                ? '#52635b'
                 : segment.travelMode === 'BICYCLE'
                   ? '#4f6f5d'
                   : '#6d655c'
-          const opacity =
+          const color = isCurrentLeg ? '#1f573b' : futureColor
+          const sourceOpacity =
             segment.source === 'live'
               ? 0.92
               : segment.source === 'curated'
                 ? 0.76
                 : 0.58
+          const opacity = isCurrentLeg
+            ? Math.max(0.82, sourceOpacity)
+            : Math.max(0.2, sourceOpacity * (0.62 - legDistance * 0.055))
+          const routeZIndex = isCurrentLeg ? 6 : 4
           addPolyline(segment.path, {
             strokeColor: '#f4f0e5',
-            strokeOpacity: 0.92,
-            strokeWeight: 9,
-            zIndex: 3,
+            strokeOpacity: isCurrentLeg
+              ? 0.96
+              : Math.max(0.32, opacity + 0.12),
+            strokeWeight: isCurrentLeg ? 10 : 8,
+            zIndex: routeZIndex - 1,
           })
 
           if (
@@ -493,8 +509,8 @@ export function MapCanvas({
             addPolyline(segment.path, {
               strokeColor: color,
               strokeOpacity: opacity,
-              strokeWeight: isTrain ? 3.5 : 3,
-              zIndex: 4,
+              strokeWeight: isCurrentLeg ? 4 : isTrain ? 3.25 : 2.75,
+              zIndex: routeZIndex,
             })
             return
           }
@@ -510,15 +526,27 @@ export function MapCanvas({
                   path: isWalking
                     ? google.maps.SymbolPath.CIRCLE
                     : dashedLine.path,
-                  scale: isWalking ? 1.45 : 2.1,
+                  scale: isWalking
+                    ? isCurrentLeg
+                      ? 1.7
+                      : 1.3
+                    : isCurrentLeg
+                      ? 2.25
+                      : 1.9,
                   strokeColor: color,
                   strokeOpacity: opacity,
                 },
                 offset: '0',
-                repeat: isWalking ? '10px' : isBus ? '17px' : '13px',
+                repeat: isWalking
+                  ? isCurrentLeg
+                    ? '9px'
+                    : '11px'
+                  : isBus
+                    ? '17px'
+                    : '13px',
               },
             ],
-            zIndex: 4,
+            zIndex: routeZIndex,
           })
         })
 

@@ -95,6 +95,7 @@ const segmentFromPolyline = (
 
     return {
       path: stitchLogicalEndpoints(path, origin, destination),
+      legIndex: request.startLegIndex,
       travelMode: request.travelMode,
       transitModes: request.input.transitModes,
       source,
@@ -122,7 +123,9 @@ const routeSegments = (
         logicalPoints[index],
         logicalPoints[index + 1],
       )
-      return segment ? [segment] : []
+      return segment
+        ? [{ ...segment, legIndex: request.startLegIndex + index }]
+        : []
     })
   }
 
@@ -140,6 +143,7 @@ const fallbackSegments = (
   request: ThreadRouteRequest,
 ): ThreadRouteSegment[] => {
   const base = {
+    legIndex: request.startLegIndex,
     travelMode: request.travelMode,
     transitModes: request.input.transitModes,
     source: request.fallbackSource,
@@ -151,6 +155,7 @@ const fallbackSegments = (
   ) {
     return request.fallbackPath.slice(1).map((destination, index) => ({
       ...base,
+      legIndex: request.startLegIndex + index,
       path: [request.fallbackPath[index], destination],
     }))
   }

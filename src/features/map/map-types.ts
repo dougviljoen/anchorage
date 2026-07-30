@@ -19,6 +19,7 @@ export type RouteAnnotation = {
 
 export type ThreadRouteSegment = {
   path: Coordinates[]
+  legIndex: number
   travelMode: TravelMode
   transitModes?: TransitMode[]
   source: 'live' | 'curated' | 'estimated'

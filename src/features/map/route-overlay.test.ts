@@ -46,6 +46,7 @@ const walkingRequest: ThreadRouteRequest = {
     { latitude: 40.701, longitude: -120.951 },
   ],
   fallbackSource: 'estimated',
+  startLegIndex: 0,
   travelMode: 'WALK',
 }
 
@@ -62,6 +63,7 @@ const transitRequest: ThreadRouteRequest = {
     { latitude: 43.252, longitude: -126.453 },
   ],
   fallbackSource: 'curated',
+  startLegIndex: 1,
   travelMode: 'TRANSIT',
 }
 
@@ -120,6 +122,10 @@ describe('buildThreadRouteOverlay', () => {
       'live',
       'curated',
     ])
+    expect(overlay.segments.map((segment) => segment.legIndex)).toEqual([
+      0,
+      1,
+    ])
     expect(overlay.segments[0].path.at(-1)).toEqual(
       walkingRequest.input.destination,
     )
@@ -177,6 +183,7 @@ describe('buildThreadRouteOverlay', () => {
 
     expect(overlay.segments).toHaveLength(1)
     expect(overlay.segments[0]).toMatchObject({
+      legIndex: 0,
       travelMode: 'WALK',
       source: 'live',
     })
@@ -206,6 +213,7 @@ describe('buildThreadRouteOverlay', () => {
 
     expect(overlay.segments).toHaveLength(1)
     expect(overlay.segments[0]).toMatchObject({
+      legIndex: 1,
       travelMode: 'TRANSIT',
       transitModes: ['TRAIN'],
       source: 'curated',
@@ -241,6 +249,7 @@ describe('buildThreadRouteOverlay', () => {
       },
       fallbackPath: [south, station],
       fallbackSource: 'estimated',
+      startLegIndex: 0,
       travelMode: 'WALK',
     }
     const returnRequest: ThreadRouteRequest = {
@@ -251,6 +260,7 @@ describe('buildThreadRouteOverlay', () => {
       },
       fallbackPath: [station, dinner],
       fallbackSource: 'estimated',
+      startLegIndex: 1,
       travelMode: 'WALK',
     }
     const asResponse = (
@@ -280,7 +290,10 @@ describe('buildThreadRouteOverlay', () => {
 
     expect(overlay.segments).toHaveLength(2)
     expect(overlay.segments[0].path).toEqual(outboundPath)
-    expect(overlay.segments[1].path).toEqual([firstMergeOffset, dinner])
+    expect(overlay.segments[1]).toMatchObject({
+      legIndex: 1,
+      path: [firstMergeOffset, dinner],
+    })
   })
 
   it('uses road-aligned provider geometry only as an estimated bus path', () => {

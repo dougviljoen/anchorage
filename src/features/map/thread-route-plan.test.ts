@@ -26,6 +26,7 @@ describe('planThreadRoute', () => {
       intermediates: [point(0.01), point(0.02), point(0.03)],
     })
     expect(requests[0].fallbackSource).toBe('estimated')
+    expect(requests[0].startLegIndex).toBe(0)
   })
 
   it('splits transit into waypoint-free requests and preserves walking runs', () => {
@@ -52,6 +53,12 @@ describe('planThreadRoute', () => {
       'TRANSIT',
       'WALK',
       'TRANSIT',
+    ])
+    expect(requests.map((request) => request.startLegIndex)).toEqual([
+      0,
+      1,
+      2,
+      3,
     ])
     expect(
       requests
