@@ -69,8 +69,8 @@ const uchinadaCoast = {
   longitude: 136.625603,
 }
 const asanogawaLine = decodePolyline(
-  'ezq~Eyp}`YaAbBe@xAfB}DLQxGyIzCyCV_@lEcH|K{Rx@y@b@YnAa@bAKhBAp@Hf@P\\Ph@d@`D`Er@r@\\Rj@Rv@L`Nt@hAGf@Gj@Or@Uf@WlRgMv@g@h@U~@WfIaBpBq@nJ_EdBk@jCm@rIyA|Ag@`KwDfA[`AOra@}CbBAx@HvLvAtANbAEdJeBbBS~CCrOBdBGdAQdAWla@mNv@MrBQ~A?j@Hh@JhA^xFnC~I~E',
-).reverse()
+  'yfg~Euk`aY_J_FyFoCiA_@i@KqAKy@@sBPw@Lma@lNeAVeAPeBFqOC_DBeBReJdBcADuAOwLwAy@IcB@ka@zCiAPgAZaKvD}Af@sIxAkCl@eBj@oJ~DqBp@kIbB{@Ti@Tw@f@mRfMg@Vs@Tk@Ng@FiAFaNu@w@Mk@S]Ss@s@aDaEi@e@]Qg@Qu@IeB@cAJoA`@c@Xy@x@}KzRoEfHUZyCvCcHbJgAlBe@xA',
+)
 
 const trip: Trip = {
   id: 'japan-2026',

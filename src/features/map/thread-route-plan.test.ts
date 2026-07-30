@@ -118,12 +118,33 @@ describe('planThreadRoute', () => {
     )
 
     expect(trainRequests).toHaveLength(2)
-    expect(
-      trainRequests.every(
-        (request) =>
-          request.fallbackSource === 'curated' &&
-          request.fallbackPath.length > 60,
-      ),
-    ).toBe(true)
+    trainRequests.forEach((request) => {
+      const segmentLengths = request.fallbackPath
+        .slice(1)
+        .map((destination, index) => {
+          const origin = request.fallbackPath[index]
+          const averageLatitude =
+            ((origin.latitude + destination.latitude) / 2) *
+            (Math.PI / 180)
+          const latitudeMeters =
+            (destination.latitude - origin.latitude) * 110_540
+          const longitudeMeters =
+            (destination.longitude - origin.longitude) *
+            111_320 *
+            Math.cos(averageLatitude)
+
+          return Math.hypot(latitudeMeters, longitudeMeters)
+        })
+      const routeLength = segmentLengths.reduce(
+        (total, length) => total + length,
+        0,
+      )
+
+      expect(request.fallbackSource).toBe('curated')
+      expect(request.fallbackPath.length).toBeGreaterThan(60)
+      expect(routeLength).toBeGreaterThan(6_600)
+      expect(routeLength).toBeLessThan(6_900)
+      expect(Math.max(...segmentLengths)).toBeLessThan(700)
+    })
   })
 })
