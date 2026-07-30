@@ -1,0 +1,12 @@
+project_id = "anchorage"
+
+[functions.compose-thread]
+verify_jwt = true
+
+# The current personal build accepts a valid user session or this project's
+# publishable key inside the function. Move to user-only auth before launch.
+[functions.compute-route]
+verify_jwt = false
+
+[functions.search-places]
+verify_jwt = false
