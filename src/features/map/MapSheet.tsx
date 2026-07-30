@@ -15,6 +15,7 @@ import type {
   JournalEntry,
   Thread,
   TodaySnapshot,
+  TravelMode,
 } from '../../domain/types'
 import {
   formatDuration,
@@ -45,6 +46,13 @@ const modeLabel: Record<Thread['mode'], string> = {
   drift: 'Gentle',
   follow: 'Curious',
   go: 'Make a day of it',
+}
+
+const travelModeLabel: Record<TravelMode, string> = {
+  WALK: 'walking',
+  TRANSIT: 'transit',
+  DRIVE: 'driving',
+  BICYCLE: 'cycling',
 }
 
 export function MapSheet({
@@ -219,15 +227,31 @@ function ThreadOverview({
       {threadRoute.status === 'loading' && (
         <p className="sheet-live-route">
           <span className="sheet-live-route__pulse" />
-          Checking the walking route
+          Checking the route
         </p>
       )}
       {threadRoute.status === 'live' && (
         <p className="sheet-live-route is-live">
           <span className="sheet-live-route__pulse" />
-          Live route · {(threadRoute.overlay.distanceMeters / 1000).toFixed(1)} km
-          {' · '}
-          {formatDuration(threadRoute.overlay.durationMinutes)} travel
+          {threadRoute.overlay.fullyLive ? (
+            <>
+              Live route ·{' '}
+              {(threadRoute.overlay.distanceMeters / 1000).toFixed(1)} km ·{' '}
+              {formatDuration(threadRoute.overlay.durationMinutes)} travel
+            </>
+          ) : (
+            <>
+              Route checked ·{' '}
+              {threadRoute.overlay.liveModes
+                .map((mode) => travelModeLabel[mode])
+                .join(' + ')}{' '}
+              live ·{' '}
+              {threadRoute.overlay.estimatedModes
+                .map((mode) => travelModeLabel[mode])
+                .join(' + ')}{' '}
+              estimated
+            </>
+          )}
         </p>
       )}
 

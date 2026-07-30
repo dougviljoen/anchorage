@@ -1,9 +1,16 @@
 import { decodePolyline } from '../../lib/polyline'
-import type { LiveRoute, LiveRouteStep } from '../../services/travel-intelligence'
+import type { TravelMode } from '../../domain/types'
+import type {
+  LiveRoute,
+  LiveRouteResponse,
+  LiveRouteStep,
+} from '../../services/travel-intelligence'
 import type {
   RouteAnnotation,
   ThreadRouteOverlay,
+  ThreadRouteSegment,
 } from './map-types'
+import type { ThreadRouteRequest } from './thread-route-plan'
 
 const maximumAnnotations = 4
 
@@ -43,22 +50,78 @@ const chooseAnnotations = (steps: LiveRouteStep[]): RouteAnnotation[] => {
   })
 }
 
-export function buildThreadRouteOverlay(
-  route: LiveRoute,
-  fetchedAt: string,
-): ThreadRouteOverlay {
-  const path = decodePolyline(route.encodedPolyline)
-  if (path.length < 2) {
-    throw new Error('The live route did not contain a usable path.')
-  }
+export type ThreadRouteResult = {
+  request: ThreadRouteRequest
+  response?: LiveRouteResponse
+}
 
-  const steps = route.legs.flatMap((leg) => leg.steps)
+const uniqueModes = (modes: TravelMode[]) => [...new Set(modes)]
+
+const liveSegment = (
+  route: LiveRoute,
+  travelMode: TravelMode,
+): ThreadRouteSegment | undefined => {
+  try {
+    const path = decodePolyline(route.encodedPolyline)
+    if (path.length < 2) return undefined
+
+    return { path, travelMode, source: 'live' }
+  } catch {
+    return undefined
+  }
+}
+
+export function buildThreadRouteOverlay(
+  results: ThreadRouteResult[],
+): ThreadRouteOverlay {
+  const segments = results.map(({ request, response }) => {
+    if (response) {
+      const segment = liveSegment(response.route, request.travelMode)
+      if (segment) return segment
+    }
+
+    return {
+      path: request.fallbackPath,
+      travelMode: request.travelMode,
+      source: 'estimated' as const,
+    }
+  })
+  const liveResponses = results.flatMap(({ response }) =>
+    response ? [response] : [],
+  )
+  const liveModes = segments.flatMap((segment) =>
+    segment.source === 'live' ? [segment.travelMode] : [],
+  )
+  const estimatedModes = segments.flatMap((segment) =>
+    segment.source === 'estimated' ? [segment.travelMode] : [],
+  )
+  const steps = liveResponses.flatMap(({ route }) =>
+    route.legs.flatMap((leg) => leg.steps),
+  )
+
   return {
-    path,
+    segments,
     annotations: chooseAnnotations(steps),
-    encodedPolyline: route.encodedPolyline,
-    distanceMeters: route.distanceMeters,
-    durationMinutes: Math.max(1, Math.round(route.durationSeconds / 60)),
-    fetchedAt,
+    encodedPolylines: liveResponses.map(
+      ({ route }) => route.encodedPolyline,
+    ),
+    distanceMeters: liveResponses.reduce(
+      (total, { route }) => total + route.distanceMeters,
+      0,
+    ),
+    durationMinutes: Math.max(
+      1,
+      Math.round(
+        liveResponses.reduce(
+          (total, { route }) => total + route.durationSeconds,
+          0,
+        ) / 60,
+      ),
+    ),
+    liveModes: uniqueModes(liveModes),
+    estimatedModes: uniqueModes(estimatedModes),
+    fullyLive: estimatedModes.length === 0,
+    fetchedAt:
+      liveResponses.at(-1)?.fetchedAt ?? new Date().toISOString(),
   }
 }

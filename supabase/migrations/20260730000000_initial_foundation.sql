@@ -1,5 +1,7 @@
 create extension if not exists pgcrypto;
-create extension if not exists postgis;
+create schema if not exists extensions;
+grant usage on schema extensions to public;
+create extension if not exists postgis with schema extensions;
 
 create schema if not exists private;
 revoke all on schema private from public, anon;
@@ -57,7 +59,7 @@ create table public.bases (
   stay_name text not null,
   starts_at timestamptz not null,
   ends_at timestamptz not null,
-  location geography(point, 4326) not null,
+  location extensions.geography(point, 4326) not null,
   arrival_notes text,
   sequence integer not null,
   created_at timestamptz not null default now(),
@@ -73,7 +75,7 @@ create table public.anchors (
   title text not null,
   detail text,
   location_name text,
-  location geography(point, 4326),
+  location extensions.geography(point, 4326),
   starts_at timestamptz not null,
   ends_at timestamptz,
   is_fixed boolean not null default true,
@@ -108,7 +110,7 @@ create table public.places (
   description text,
   category text not null,
   address text,
-  location geography(point, 4326) not null,
+  location extensions.geography(point, 4326) not null,
   timezone text not null,
   business_status text,
   price_level smallint check (price_level between 0 and 4),
@@ -265,7 +267,7 @@ create table public.journal_entries (
   observation text not null,
   object_note text,
   media_path text,
-  location geography(point, 4326),
+  location extensions.geography(point, 4326),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

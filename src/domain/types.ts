@@ -75,12 +75,14 @@ export type Energy = 'quiet' | 'open' | 'full'
 export type ThreadMode = 'drift' | 'follow' | 'go'
 export type Atmosphere = 'quiet' | 'settled' | 'lively'
 export type ThreadPalette = 'clay' | 'moss' | 'indigo'
+export type TravelMode = 'WALK' | 'DRIVE' | 'BICYCLE' | 'TRANSIT'
 
 export type ThreadStop = {
   id: Id
   order: number
   title: string
   category: string
+  travelModeFromPrevious: TravelMode
   durationMinutes: number
   travelMinutesFromPrevious: number
   note: string
@@ -116,6 +118,7 @@ export type Thread = {
   palette: ThreadPalette
   tags: string[]
   stops: ThreadStop[]
+  travelModeToAnchor: TravelMode
   phrases: PhraseCard[]
   evidence: Evidence[]
 }

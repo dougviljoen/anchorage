@@ -15,9 +15,13 @@ The ten-stop limit is intentional: Google prices route requests with eleven or
 more intermediate waypoints at a higher tier. Transit requests reject
 intermediates because the Routes API does not support them.
 
-Selected walking threads consume this function now. Until a live response
-arrives, the map retains its composed coordinate geometry. Mixed-mode threads
-remain composed until their data model expresses a travel mode per leg.
+Each thread records the travel mode into every stop and from its final stop to
+the next anchor. Continuous walking legs are grouped into one efficient request;
+transit legs are requested separately because Google does not accept transit
+waypoints. Until a response arrives, the map retains its composed geometry. If
+the provider has no transit geometry, Anchorage keeps that connector visibly
+estimated while rendering successful walking legs against the live street
+network.
 
 ### `search-places`
 

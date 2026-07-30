@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { Coordinates } from '../domain/types'
+import type { Coordinates, TravelMode } from '../domain/types'
 import {
   getSupabaseBrowserClient,
   hasSupabaseFunctions,
@@ -94,7 +94,7 @@ export type ComputeRouteInput = {
   origin: Coordinates
   destination: Coordinates
   intermediates?: Coordinates[]
-  travelMode?: 'WALK' | 'DRIVE' | 'BICYCLE' | 'TRANSIT'
+  travelMode?: TravelMode
   languageCode?: string
   departureTime?: string
   transitPreference?: 'LESS_WALKING' | 'FEWER_TRANSFERS'

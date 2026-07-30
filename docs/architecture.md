@@ -93,9 +93,11 @@ should show its age whenever the network is unavailable.
 
 ## Security posture
 
-- Browser code receives only the Supabase anonymous key and a hostname/API
-  restricted Google browser key.
+- Browser code receives only the Supabase publishable key (or legacy anonymous
+  key) and a hostname/API restricted Google browser key.
 - OpenAI, Google Places/Routes and Supabase service-role credentials remain in
   Edge Function secrets.
 - Row-level security owns all personal trip, taste and journal data.
 - Public place research is written only by trusted server-side jobs.
+- PostGIS is installed in the non-exposed `extensions` schema so its internal
+  reference tables never become part of the public Data API.

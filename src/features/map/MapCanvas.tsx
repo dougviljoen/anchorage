@@ -4,6 +4,7 @@ import type { Coordinates, TodaySnapshot } from '../../domain/types'
 import { loadGoogleMaps } from './google-maps-loader'
 import { MapFallback } from './MapFallback'
 import { createMarkerContent } from './map-markers'
+import { planThreadRoute } from './thread-route-plan'
 import type {
   MapMode,
   PositionState,
@@ -435,26 +436,59 @@ export function MapCanvas({
       }
 
       if (selectedThread) {
-        const routeCoordinates =
+        const routeSegments =
           threadRoute.status === 'live'
-            ? threadRoute.overlay.path
-            : [
-                position.coordinates,
-                ...selectedThread.stops.map((stop) => stop.coordinates),
-                ...(nextAnchor.coordinates ? [nextAnchor.coordinates] : []),
-              ]
+            ? threadRoute.overlay.segments
+            : nextAnchor.coordinates
+              ? planThreadRoute(
+                  selectedThread,
+                  position.coordinates,
+                  nextAnchor.coordinates,
+                ).map((request) => ({
+                  path: request.fallbackPath,
+                  travelMode: request.travelMode,
+                  source: 'estimated' as const,
+                }))
+              : []
 
-        addPolyline(routeCoordinates, {
-          strokeColor: '#f4f0e5',
-          strokeOpacity: 0.92,
-          strokeWeight: 9,
-          zIndex: 3,
-        })
-        addPolyline(routeCoordinates, {
-          strokeColor: '#29483a',
-          strokeOpacity: 0.92,
-          strokeWeight: 3,
-          zIndex: 4,
+        routeSegments.forEach((segment) => {
+          addPolyline(segment.path, {
+            strokeColor: '#f4f0e5',
+            strokeOpacity: 0.92,
+            strokeWeight: 9,
+            zIndex: 3,
+          })
+
+          if (segment.source === 'live') {
+            addPolyline(segment.path, {
+              strokeColor:
+                segment.travelMode === 'TRANSIT' ? '#516572' : '#29483a',
+              strokeOpacity: 0.92,
+              strokeWeight: 3,
+              zIndex: 4,
+            })
+            return
+          }
+
+          addPolyline(segment.path, {
+            strokeOpacity: 0,
+            strokeWeight: 0,
+            icons: [
+              {
+                icon: {
+                  ...dashedLine,
+                  strokeColor:
+                    segment.travelMode === 'TRANSIT'
+                      ? '#516572'
+                      : '#65736a',
+                  strokeOpacity: 0.78,
+                },
+                offset: '0',
+                repeat: '13px',
+              },
+            ],
+            zIndex: 4,
+          })
         })
 
         selectedThread.stops.forEach((stop, index) => {
