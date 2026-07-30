@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { demoToday } from '../../data/demo/today'
 import type { Thread } from '../../domain/types'
 import { planThreadRoute } from './thread-route-plan'
 
@@ -94,5 +95,35 @@ describe('planThreadRoute', () => {
         point(0.02),
       ],
     })
+  })
+
+  it('keeps the Asanogawa train on detailed rail geometry', () => {
+    const thread = demoToday.threads.find(
+      ({ id }) => id === 'sea-at-the-end',
+    )
+    const destination = demoToday.context.nextAnchor.coordinates
+
+    expect(thread).toBeDefined()
+    expect(destination).toBeDefined()
+    if (!thread || !destination) return
+
+    const trainRequests = planThreadRoute(
+      thread,
+      demoToday.context.coordinates,
+      destination,
+    ).filter(
+      (request) =>
+        request.travelMode === 'TRANSIT' &&
+        request.input.transitModes?.includes('TRAIN'),
+    )
+
+    expect(trainRequests).toHaveLength(2)
+    expect(
+      trainRequests.every(
+        (request) =>
+          request.fallbackSource === 'curated' &&
+          request.fallbackPath.length > 60,
+      ),
+    ).toBe(true)
   })
 })

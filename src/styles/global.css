@@ -157,6 +157,20 @@ h3 {
   pointer-events: none;
 }
 
+.map-canvas__route-credit {
+  position: absolute;
+  right: 10px;
+  bottom: 3px;
+  z-index: 4;
+  color: rgba(55, 64, 59, 0.72);
+  font-size: 9px;
+  text-decoration: none;
+}
+
+.map-canvas__route-credit:hover {
+  text-decoration: underline;
+}
+
 .map-canvas__loading {
   position: absolute;
   z-index: 5;

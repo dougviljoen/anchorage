@@ -6,6 +6,7 @@ import type {
   TodaySnapshot,
   Trip,
 } from '../../domain/types'
+import { decodePolyline } from '../../lib/polyline'
 
 const officialEvidence: Evidence = {
   label: 'Official venue information',
@@ -27,6 +28,13 @@ const asanogawaEvidence: Evidence = {
     'https://www.hokutetsu.co.jp/railway/asanogawasen/uchinada/',
   verifiedAt: '2026-07-30T12:00:00+12:00',
   confidence: 'verified',
+}
+
+const asanogawaGeometryEvidence: Evidence = {
+  label: 'Rail geometry · OpenStreetMap contributors',
+  sourceUrl: 'https://www.openstreetmap.org/relation/10272144',
+  verifiedAt: '2026-07-30T12:00:00+12:00',
+  confidence: 'strong',
 }
 
 const uchinadaCoastEvidence: Evidence = {
@@ -60,19 +68,9 @@ const uchinadaCoast = {
   latitude: 36.644241,
   longitude: 136.625603,
 }
-const asanogawaLine = [
-  hokutetsuKanazawa,
-  { latitude: 36.582951, longitude: 136.651768 },
-  { latitude: 36.590827, longitude: 136.64893 },
-  { latitude: 36.596581, longitude: 136.648278 },
-  { latitude: 36.602402, longitude: 136.648472 },
-  { latitude: 36.606596, longitude: 136.647595 },
-  { latitude: 36.611945, longitude: 136.645619 },
-  { latitude: 36.616706, longitude: 136.643462 },
-  { latitude: 36.622593, longitude: 136.641217 },
-  { latitude: 36.630293, longitude: 136.638064 },
-  uchinadaStation,
-]
+const asanogawaLine = decodePolyline(
+  'ezq~Eyp}`YaAbBe@xAfB}DLQxGyIzCyCV_@lEcH|K{Rx@y@b@YnAa@bAKhBAp@Hf@P\\Ph@d@`D`Er@r@\\Rj@Rv@L`Nt@hAGf@Gj@Or@Uf@WlRgMv@g@h@U~@WfIaBpBq@nJ_EdBk@jCm@rIyA|Ag@`KwDfA[`AOra@}CbBAx@HvLvAtANbAEdJeBbBS~CCrOBdBGdAQdAWla@mNv@MrBQ~A?j@Hh@JhA^xFnC~I~E',
+).reverse()
 
 const trip: Trip = {
   id: 'japan-2026',
@@ -409,6 +407,7 @@ const threads: Thread[] = [
     evidence: [
       matsunoyuEvidence,
       asanogawaEvidence,
+      asanogawaGeometryEvidence,
       uchinadaCoastEvidence,
       routeEvidence,
     ],

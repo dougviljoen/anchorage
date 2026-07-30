@@ -139,6 +139,11 @@ export function MapCanvas({
   const [status, setStatus] = useState<'loading' | 'ready' | 'fallback'>(
     'loading',
   )
+  const showsCuratedGeometry = snapshot.threads
+    .find((thread) => thread.id === selectedThreadId)
+    ?.routeWaypoints?.some(
+      (waypoint) => waypoint.curatedPathFromPrevious?.length,
+    )
 
   useEffect(() => {
     let active = true
@@ -618,6 +623,16 @@ export function MapCanvas({
         </div>
       )}
       <div className="map-canvas__tone" />
+      {showsCuratedGeometry && (
+        <a
+          className="map-canvas__route-credit"
+          href="https://www.openstreetmap.org/copyright"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Rail geometry © OpenStreetMap contributors
+        </a>
+      )}
     </div>
   )
 }
