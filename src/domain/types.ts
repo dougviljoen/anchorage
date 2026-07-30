@@ -98,6 +98,14 @@ export type ThreadStop = {
   evidence: Evidence[]
 }
 
+export type ThreadRouteWaypoint = {
+  id: Id
+  coordinates: Coordinates
+  travelModeFromPrevious: TravelMode
+  transitModesFromPrevious?: TransitMode[]
+  curatedPathFromPrevious?: Coordinates[]
+}
+
 export type PhraseCard = {
   id: Id
   context: string
@@ -125,6 +133,7 @@ export type Thread = {
   palette: ThreadPalette
   tags: string[]
   stops: ThreadStop[]
+  routeWaypoints?: ThreadRouteWaypoint[]
   travelModeToAnchor: TravelMode
   transitModesToAnchor?: TransitMode[]
   phrases: PhraseCard[]

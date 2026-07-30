@@ -24,6 +24,7 @@ describe('planThreadRoute', () => {
       travelMode: 'WALK',
       intermediates: [point(0.01), point(0.02), point(0.03)],
     })
+    expect(requests[0].fallbackSource).toBe('estimated')
   })
 
   it('splits transit into waypoint-free requests and preserves walking runs', () => {
@@ -57,5 +58,41 @@ describe('planThreadRoute', () => {
         .every((request) => request.input.intermediates === undefined),
     ).toBe(true)
     expect(requests[1].input.transitModes).toEqual(['TRAIN'])
+  })
+
+  it('uses explicit logistics and a curated rail trace when provided', () => {
+    const railPath = [point(0.015), point(0.018)]
+    const requests = planThreadRoute(
+      {
+        ...thread,
+        routeWaypoints: [
+          {
+            id: 'station',
+            coordinates: point(0.01),
+            travelModeFromPrevious: 'WALK',
+          },
+          {
+            id: 'final-stop',
+            coordinates: point(0.02),
+            travelModeFromPrevious: 'TRANSIT',
+            transitModesFromPrevious: ['TRAIN'],
+            curatedPathFromPrevious: railPath,
+          },
+        ],
+      },
+      point(0),
+      point(0.05),
+    )
+
+    expect(requests).toHaveLength(3)
+    expect(requests[1]).toMatchObject({
+      fallbackSource: 'curated',
+      travelMode: 'TRANSIT',
+      fallbackPath: [
+        point(0.01),
+        ...railPath,
+        point(0.02),
+      ],
+    })
   })
 })

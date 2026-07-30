@@ -8,28 +8,56 @@ import type { ComputeRouteInput } from '../../services/travel-intelligence'
 export type ThreadRouteRequest = {
   input: ComputeRouteInput
   fallbackPath: Coordinates[]
+  fallbackSource: 'curated' | 'estimated'
   travelMode: TravelMode
 }
 
 const maximumIntermediates = 10
+
+const sameCoordinates = (left: Coordinates, right: Coordinates) =>
+  left.latitude === right.latitude &&
+  left.longitude === right.longitude
+
+const joinPath = (
+  origin: Coordinates,
+  curatedPath: Coordinates[] | undefined,
+  destination: Coordinates,
+) => {
+  if (!curatedPath?.length) return [origin, destination]
+
+  const path = [origin, ...curatedPath, destination]
+  return path.filter(
+    (point, index) =>
+      index === 0 || !sameCoordinates(point, path[index - 1]),
+  )
+}
 
 export function planThreadRoute(
   thread: Thread,
   origin: Coordinates,
   destination: Coordinates,
 ): ThreadRouteRequest[] {
+  const waypoints = thread.routeWaypoints ?? thread.stops
   const points = [
     origin,
-    ...thread.stops.map((stop) => stop.coordinates),
+    ...waypoints.map((waypoint) => waypoint.coordinates),
     destination,
   ]
   const modes = [
-    ...thread.stops.map((stop) => stop.travelModeFromPrevious),
+    ...waypoints.map((waypoint) => waypoint.travelModeFromPrevious),
     thread.travelModeToAnchor,
   ]
   const transitModes = [
-    ...thread.stops.map((stop) => stop.transitModesFromPrevious),
+    ...waypoints.map((waypoint) => waypoint.transitModesFromPrevious),
     thread.transitModesToAnchor,
+  ]
+  const curatedPaths = [
+    ...waypoints.map((waypoint) =>
+      'curatedPathFromPrevious' in waypoint
+        ? waypoint.curatedPathFromPrevious
+        : undefined,
+    ),
+    undefined,
   ]
   const requests: ThreadRouteRequest[] = []
 
@@ -48,7 +76,15 @@ export function planThreadRoute(
       }
     }
 
-    const fallbackPath = points.slice(edgeIndex, finalEdgeIndex + 2)
+    const curatedPath = curatedPaths[edgeIndex]
+    const fallbackPath =
+      edgeIndex === finalEdgeIndex
+        ? joinPath(
+            points[edgeIndex],
+            curatedPath,
+            points[finalEdgeIndex + 1],
+          )
+        : points.slice(edgeIndex, finalEdgeIndex + 2)
     requests.push({
       input: {
         origin: fallbackPath[0],
@@ -67,6 +103,7 @@ export function planThreadRoute(
           : {}),
       },
       fallbackPath,
+      fallbackSource: curatedPath ? 'curated' : 'estimated',
       travelMode,
     })
 

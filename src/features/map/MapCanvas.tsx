@@ -447,11 +447,36 @@ export function MapCanvas({
                 ).map((request) => ({
                   path: request.fallbackPath,
                   travelMode: request.travelMode,
-                  source: 'estimated' as const,
+                  transitModes: request.input.transitModes,
+                  source: request.fallbackSource,
                 }))
               : []
 
         routeSegments.forEach((segment) => {
+          const isTrain =
+            segment.travelMode === 'TRANSIT' &&
+            segment.transitModes?.some((mode) =>
+              ['TRAIN', 'RAIL', 'LIGHT_RAIL', 'SUBWAY'].includes(mode),
+            )
+          const isBus =
+            segment.travelMode === 'TRANSIT' &&
+            segment.transitModes?.includes('BUS')
+          const color = isTrain
+            ? '#516572'
+            : isBus
+              ? '#8a5a44'
+              : segment.travelMode === 'WALK'
+                ? '#29483a'
+                : segment.travelMode === 'BICYCLE'
+                  ? '#4f6f5d'
+                  : '#6d655c'
+          const opacity =
+            segment.source === 'live'
+              ? 0.92
+              : segment.source === 'curated'
+                ? 0.76
+                : 0.58
+
           addPolyline(segment.path, {
             strokeColor: '#f4f0e5',
             strokeOpacity: 0.92,
@@ -459,17 +484,20 @@ export function MapCanvas({
             zIndex: 3,
           })
 
-          if (segment.source === 'live') {
+          if (
+            (isTrain && segment.source !== 'estimated') ||
+            segment.travelMode === 'DRIVE'
+          ) {
             addPolyline(segment.path, {
-              strokeColor:
-                segment.travelMode === 'TRANSIT' ? '#516572' : '#29483a',
-              strokeOpacity: 0.92,
-              strokeWeight: 3,
+              strokeColor: color,
+              strokeOpacity: opacity,
+              strokeWeight: isTrain ? 3.5 : 3,
               zIndex: 4,
             })
             return
           }
 
+          const isWalking = segment.travelMode === 'WALK'
           addPolyline(segment.path, {
             strokeOpacity: 0,
             strokeWeight: 0,
@@ -477,14 +505,15 @@ export function MapCanvas({
               {
                 icon: {
                   ...dashedLine,
-                  strokeColor:
-                    segment.travelMode === 'TRANSIT'
-                      ? '#516572'
-                      : '#65736a',
-                  strokeOpacity: 0.78,
+                  path: isWalking
+                    ? google.maps.SymbolPath.CIRCLE
+                    : dashedLine.path,
+                  scale: isWalking ? 1.45 : 2.1,
+                  strokeColor: color,
+                  strokeOpacity: opacity,
                 },
                 offset: '0',
-                repeat: '13px',
+                repeat: isWalking ? '10px' : isBus ? '17px' : '13px',
               },
             ],
             zIndex: 4,

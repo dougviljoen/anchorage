@@ -55,6 +55,9 @@ const travelModeLabel: Record<TravelMode, string> = {
   BICYCLE: 'cycling',
 }
 
+const modeSummary = (modes: TravelMode[]) =>
+  modes.map((mode) => travelModeLabel[mode]).join(' + ')
+
 export function MapSheet({
   snapshot,
   mode,
@@ -241,15 +244,13 @@ function ThreadOverview({
             </>
           ) : (
             <>
-              Route checked ·{' '}
-              {threadRoute.overlay.liveModes
-                .map((mode) => travelModeLabel[mode])
-                .join(' + ')}{' '}
-              live ·{' '}
-              {threadRoute.overlay.estimatedModes
-                .map((mode) => travelModeLabel[mode])
-                .join(' + ')}{' '}
-              estimated
+              Route checked
+              {threadRoute.overlay.liveModes.length > 0 &&
+                ` · ${modeSummary(threadRoute.overlay.liveModes)} live`}
+              {threadRoute.overlay.curatedModes.length > 0 &&
+                ` · ${modeSummary(threadRoute.overlay.curatedModes)} verified`}
+              {threadRoute.overlay.estimatedModes.length > 0 &&
+                ` · ${modeSummary(threadRoute.overlay.estimatedModes)} estimated`}
             </>
           )}
         </p>

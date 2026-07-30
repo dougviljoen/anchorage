@@ -21,6 +21,59 @@ const routeEvidence: Evidence = {
   confidence: 'strong',
 }
 
+const asanogawaEvidence: Evidence = {
+  label: 'Hokutetsu Asanogawa Line',
+  sourceUrl:
+    'https://www.hokutetsu.co.jp/railway/asanogawasen/uchinada/',
+  verifiedAt: '2026-07-30T12:00:00+12:00',
+  confidence: 'verified',
+}
+
+const uchinadaCoastEvidence: Evidence = {
+  label: 'Kanazawa official travel guide',
+  sourceUrl:
+    'https://visitkanazawa.jp/en/attractions/detail_52274.html',
+  verifiedAt: '2026-07-30T12:00:00+12:00',
+  confidence: 'verified',
+}
+
+const matsunoyuEvidence: Evidence = {
+  label: 'Matsu-no-yu official account',
+  sourceUrl: 'https://www.instagram.com/matsu_sento/',
+  verifiedAt: '2026-07-30T12:00:00+12:00',
+  confidence: 'strong',
+}
+
+const matsunoyu = {
+  latitude: 36.565213,
+  longitude: 136.651755,
+}
+const hokutetsuKanazawa = {
+  latitude: 36.578445,
+  longitude: 136.649751,
+}
+const uchinadaStation = {
+  latitude: 36.633381,
+  longitude: 136.634268,
+}
+const uchinadaCoast = {
+  latitude: 36.644241,
+  longitude: 136.625603,
+}
+const asanogawaLine = [
+  hokutetsuKanazawa,
+  { latitude: 36.582951, longitude: 136.651768 },
+  { latitude: 36.590827, longitude: 136.64893 },
+  { latitude: 36.596581, longitude: 136.648278 },
+  { latitude: 36.602402, longitude: 136.648472 },
+  { latitude: 36.606596, longitude: 136.647595 },
+  { latitude: 36.611945, longitude: 136.645619 },
+  { latitude: 36.616706, longitude: 136.643462 },
+  { latitude: 36.622593, longitude: 136.641217 },
+  { latitude: 36.630293, longitude: 136.638064 },
+  uchinadaStation,
+]
+
 const trip: Trip = {
   id: 'japan-2026',
   name: 'Japan, held lightly',
@@ -264,66 +317,86 @@ const threads: Thread[] = [
     title: 'Sea at the end of the line',
     eyebrow: 'Go while it’s good',
     summary:
-      'A local bus, a bracing harbour walk and an old bathhouse before the weather turns.',
+      'A neighbourhood bathhouse, then a small local train to its final stop and the Sea of Japan.',
     whyNow:
-      'Today is your only clear western horizon before Kyoto. The 12:18 bus makes the whole outing fit without rushing dinner.',
-    durationMinutes: 295,
-    walkingMinutes: 67,
-    walkingKm: 4.1,
-    costYen: 4200,
+      'Today is your only clear western horizon before Kyoto. Starting at Matsu-no-yu still leaves room for the short train ride and an unhurried coast.',
+    durationMinutes: 315,
+    walkingMinutes: 112,
+    walkingKm: 8.6,
+    costYen: 2200,
     atmosphere: 'lively',
     energy: 'full',
     weatherNote: 'Clearing west · sunset 16:46',
-    returnNote: 'Back in Kanazawa at 17:22',
+    returnNote: 'Train back from the final stop · dinner remains comfortable',
     fallback:
-      'If the bus is delayed, leave at Ono and follow the shorter canal route.',
+      'If the coast stays wet, turn at the dune edge and check the next train before leaving the station area.',
     palette: 'indigo',
-    tags: ['local bus', 'coast', 'sentō'],
+    tags: ['sentō', 'local train', 'coast'],
     stops: [
       {
-        id: 'local-bus',
-        order: 1,
-        title: 'Bus west to Ono',
-        category: 'Local bus',
-        travelModeFromPrevious: 'TRANSIT',
-        transitModesFromPrevious: ['BUS'],
-        durationMinutes: 42,
-        travelMinutesFromPrevious: 18,
-        note: 'A slow change from city edge to open sky.',
-        openingNote: 'Useful departure at 12:18',
-        coordinates: { latitude: 36.5781, longitude: 136.6486 },
-        evidence: [routeEvidence],
-      },
-      {
-        id: 'ono-harbour',
-        order: 2,
-        title: 'Ono harbour',
-        category: 'Waterside walk',
-        travelModeFromPrevious: 'TRANSIT',
-        transitModesFromPrevious: ['BUS'],
-        durationMinutes: 75,
-        travelMinutesFromPrevious: 5,
-        note: 'Warehouses, working boats and the horizon opening beyond the river mouth.',
-        openingNote: 'Best before 15:30',
-        coordinates: { latitude: 36.6105, longitude: 136.6042 },
-        evidence: [routeEvidence],
-      },
-      {
         id: 'matsunoyu',
-        order: 3,
+        order: 1,
         title: 'Matsu-no-yu',
-        category: 'Sentō',
+        category: 'Restored public bathhouse',
         travelModeFromPrevious: 'WALK',
         durationMinutes: 60,
-        travelMinutesFromPrevious: 12,
-        note: 'A warm, ordinary neighbourhood ending before the bus home.',
-        openingNote: 'Open from 14:00 · cash only',
-        coordinates: { latitude: 36.6041, longitude: 136.608 },
-        evidence: [officialEvidence],
+        travelMinutesFromPrevious: 26,
+        note: 'A restored public bath with an ordinary neighbourhood rhythm.',
+        openingNote: 'Schedule varies · confirm today before leaving',
+        coordinates: matsunoyu,
+        evidence: [matsunoyuEvidence],
+      },
+      {
+        id: 'uchinada-coast',
+        order: 2,
+        title: 'Uchinada Coast',
+        category: 'Dune & sea walk',
+        travelModeFromPrevious: 'WALK',
+        durationMinutes: 75,
+        travelMinutesFromPrevious: 20,
+        note: 'A broad dune, cold air and the western horizon with almost nothing competing for attention.',
+        openingNote: '1.6 km from the final stop · best before sunset',
+        coordinates: uchinadaCoast,
+        evidence: [uchinadaCoastEvidence],
       },
     ],
-    travelModeToAnchor: 'TRANSIT',
-    transitModesToAnchor: ['BUS'],
+    routeWaypoints: [
+      {
+        id: 'matsunoyu',
+        coordinates: matsunoyu,
+        travelModeFromPrevious: 'WALK',
+      },
+      {
+        id: 'outbound-kanazawa-station',
+        coordinates: hokutetsuKanazawa,
+        travelModeFromPrevious: 'WALK',
+      },
+      {
+        id: 'outbound-uchinada-station',
+        coordinates: uchinadaStation,
+        travelModeFromPrevious: 'TRANSIT',
+        transitModesFromPrevious: ['TRAIN'],
+        curatedPathFromPrevious: asanogawaLine,
+      },
+      {
+        id: 'uchinada-coast',
+        coordinates: uchinadaCoast,
+        travelModeFromPrevious: 'WALK',
+      },
+      {
+        id: 'return-uchinada-station',
+        coordinates: uchinadaStation,
+        travelModeFromPrevious: 'WALK',
+      },
+      {
+        id: 'return-kanazawa-station',
+        coordinates: hokutetsuKanazawa,
+        travelModeFromPrevious: 'TRANSIT',
+        transitModesFromPrevious: ['TRAIN'],
+        curatedPathFromPrevious: [...asanogawaLine].reverse(),
+      },
+    ],
+    travelModeToAnchor: 'WALK',
     phrases: [
       {
         id: 'towel',
@@ -333,7 +406,12 @@ const threads: Thread[] = [
         romanized: 'Taoru o kariraremasu ka?',
       },
     ],
-    evidence: [officialEvidence, routeEvidence],
+    evidence: [
+      matsunoyuEvidence,
+      asanogawaEvidence,
+      uchinadaCoastEvidence,
+      routeEvidence,
+    ],
   },
 ]
 

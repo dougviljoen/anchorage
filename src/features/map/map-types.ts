@@ -1,4 +1,8 @@
-import type { Coordinates, TravelMode } from '../../domain/types'
+import type {
+  Coordinates,
+  TransitMode,
+  TravelMode,
+} from '../../domain/types'
 
 export type MapMode = 'field' | 'journey' | 'memories'
 
@@ -16,7 +20,8 @@ export type RouteAnnotation = {
 export type ThreadRouteSegment = {
   path: Coordinates[]
   travelMode: TravelMode
-  source: 'live' | 'estimated'
+  transitModes?: TransitMode[]
+  source: 'live' | 'curated' | 'estimated'
 }
 
 export type ThreadRouteOverlay = {
@@ -26,6 +31,7 @@ export type ThreadRouteOverlay = {
   distanceMeters: number
   durationMinutes: number
   liveModes: TravelMode[]
+  curatedModes: TravelMode[]
   estimatedModes: TravelMode[]
   fullyLive: boolean
   fetchedAt: string

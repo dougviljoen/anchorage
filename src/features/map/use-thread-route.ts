@@ -25,6 +25,11 @@ const asRoadAlignedFallback = (
   languageCode: input.languageCode,
 })
 
+const canUseRoadAlignedFallback = (input: ComputeRouteInput) =>
+  input.travelMode === 'TRANSIT' &&
+  input.transitModes?.length === 1 &&
+  input.transitModes[0] === 'BUS'
+
 export function useThreadRoute({
   thread,
   origin,
@@ -46,11 +51,18 @@ export function useThreadRoute({
       ? [
           thread.id,
           coordinateKey(origin),
-          ...thread.stops.flatMap((stop) => [
-            stop.travelModeFromPrevious,
-            stop.transitModesFromPrevious?.join(',') ?? '',
-            coordinateKey(stop.coordinates),
-          ]),
+          ...(thread.routeWaypoints ?? thread.stops).flatMap(
+            (waypoint) => [
+              waypoint.travelModeFromPrevious,
+              waypoint.transitModesFromPrevious?.join(',') ?? '',
+              coordinateKey(waypoint.coordinates),
+              ...('curatedPathFromPrevious' in waypoint
+                ? (waypoint.curatedPathFromPrevious ?? []).map(
+                    coordinateKey,
+                  )
+                : []),
+            ],
+          ),
           thread.travelModeToAnchor,
           thread.transitModesToAnchor?.join(',') ?? '',
           coordinateKey(destination),
@@ -78,10 +90,12 @@ export function useThreadRoute({
           return {
             request,
             response: await gateway.computeRoute(request.input),
-            estimatedResponse: undefined,
           }
         } catch {
-          if (request.travelMode === 'TRANSIT') {
+          if (
+            request.fallbackSource !== 'curated' &&
+            canUseRoadAlignedFallback(request.input)
+          ) {
             try {
               return {
                 request,
@@ -105,8 +119,10 @@ export function useThreadRoute({
     ).then((responses) => {
       if (!active) return
       const hasRouteGeometry = responses.some(
-        ({ response, estimatedResponse }) =>
-          response || estimatedResponse,
+        ({ request, response, estimatedResponse }) =>
+          response ||
+          estimatedResponse ||
+          request.fallbackSource === 'curated',
       )
 
       if (!hasRouteGeometry) {

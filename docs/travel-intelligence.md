@@ -21,10 +21,12 @@ transit legs are requested separately because Google does not accept transit
 waypoints. Transit legs can explicitly prefer bus, subway, train, light rail or
 the broader rail family rather than collapsing every service into one generic
 mode. Until a response arrives, the map retains its composed geometry. If the
-provider has no transit geometry, Anchorage keeps that connector visibly
-estimated and asks for road-aligned fallback geometry rather than drawing a
-misleading straight chord. Successful walking legs still render against the
-live street network.
+provider has no transit geometry, a destination pack can supply a
+source-verified path through known stations. Anchorage labels that line
+verified rather than live; it never substitutes a road shape for a train.
+An explicitly bus-only leg may use road-aligned driving geometry as a visibly
+estimated fallback because both services follow the street network.
+Successful walking legs still render against the live street network.
 
 ### `search-places`
 
