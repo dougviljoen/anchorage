@@ -12,11 +12,6 @@ export type PositionState = {
   accuracyMeters?: number
 }
 
-export type RouteAnnotation = {
-  coordinates: Coordinates
-  label: string
-}
-
 export type ThreadRouteSegment = {
   path: Coordinates[]
   legIndex: number
@@ -27,7 +22,6 @@ export type ThreadRouteSegment = {
 
 export type ThreadRouteOverlay = {
   segments: ThreadRouteSegment[]
-  annotations: RouteAnnotation[]
   encodedPolylines: string[]
   distanceMeters: number
   durationMinutes: number

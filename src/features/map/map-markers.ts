@@ -6,7 +6,6 @@ type MarkerKind =
   | 'soft-anchor'
   | 'opportunity'
   | 'stop'
-  | 'route-label'
   | 'base'
   | 'memory'
 
@@ -40,14 +39,6 @@ export function createMarkerContent({
     const core = document.createElement('span')
     core.className = 'spatial-marker__current-core'
     root.append(core)
-    return root
-  }
-
-  if (kind === 'route-label') {
-    const text = document.createElement('span')
-    text.className = 'spatial-marker__label'
-    text.textContent = label ?? ''
-    root.append(text)
     return root
   }
 

@@ -468,24 +468,7 @@ export function MapCanvas({
             activeLegIndex,
           )
           const isCurrentLeg = priority.isCurrent
-          const isTrain =
-            segment.travelMode === 'TRANSIT' &&
-            segment.transitModes?.some((mode) =>
-              ['TRAIN', 'RAIL', 'LIGHT_RAIL', 'SUBWAY'].includes(mode),
-            )
-          const isBus =
-            segment.travelMode === 'TRANSIT' &&
-            segment.transitModes?.includes('BUS')
-          const futureColor = isTrain
-            ? '#516572'
-            : isBus
-              ? '#8a5a44'
-              : segment.travelMode === 'WALK'
-                ? '#485c52'
-                : segment.travelMode === 'BICYCLE'
-                  ? '#4f6f5d'
-                  : '#6d655c'
-          const color = isCurrentLeg ? '#1f573b' : futureColor
+          const color = isCurrentLeg ? '#1f573b' : '#52635b'
           const routeZIndex = priority.zIndex
 
           addPolyline(segment.path, {
@@ -495,95 +478,12 @@ export function MapCanvas({
             zIndex: routeZIndex - 1,
           })
 
-          if (
-            (isTrain && segment.source !== 'estimated') ||
-            segment.travelMode === 'DRIVE'
-          ) {
-            addPolyline(segment.path, {
-              strokeColor: color,
-              strokeOpacity: priority.opacity,
-              strokeWeight: isTrain
-                ? Math.max(priority.strokeWeight, 3.5)
-                : priority.strokeWeight,
-              zIndex: routeZIndex,
-            })
-          } else {
-            const isWalking = segment.travelMode === 'WALK'
-            addPolyline(segment.path, {
-              strokeOpacity: 0,
-              strokeWeight: 0,
-              icons: [
-                {
-                  icon: {
-                    ...dashedLine,
-                    path: isWalking
-                      ? google.maps.SymbolPath.CIRCLE
-                      : dashedLine.path,
-                    scale: isWalking
-                      ? isCurrentLeg
-                        ? 1.8
-                        : 1.45
-                      : isCurrentLeg
-                        ? 2.35
-                        : 2.05,
-                    strokeColor: color,
-                    strokeOpacity: priority.opacity,
-                  },
-                  offset: '0',
-                  repeat: isWalking
-                    ? isCurrentLeg
-                      ? '9px'
-                      : '10px'
-                    : isBus
-                      ? '17px'
-                      : '13px',
-                },
-              ],
-              zIndex: routeZIndex,
-            })
-          }
-
-          if (isCurrentLeg) {
-            addPolyline(segment.path, {
-              strokeOpacity: 0,
-              strokeWeight: 0,
-              icons: [
-                {
-                  icon: {
-                    path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                    scale: 2.2,
-                    fillColor: color,
-                    fillOpacity: 0.96,
-                    strokeColor: '#f4f0e5',
-                    strokeOpacity: 0.98,
-                    strokeWeight: 1.2,
-                  },
-                  offset: '58%',
-                },
-              ],
-              zIndex: routeZIndex + 1,
-            })
-          } else {
-            addPolyline(segment.path, {
-              strokeOpacity: 0,
-              strokeWeight: 0,
-              icons: [
-                {
-                  icon: {
-                    path: google.maps.SymbolPath.CIRCLE,
-                    scale: 2,
-                    fillColor: '#f4f0e5',
-                    fillOpacity: 1,
-                    strokeColor: color,
-                    strokeOpacity: priority.opacity,
-                    strokeWeight: 1.4,
-                  },
-                  offset: '0',
-                },
-              ],
-              zIndex: routeZIndex + 1,
-            })
-          }
+          addPolyline(segment.path, {
+            strokeColor: color,
+            strokeOpacity: priority.opacity,
+            strokeWeight: priority.strokeWeight,
+            zIndex: routeZIndex,
+          })
         })
 
         selectedThread.stops.forEach((stop, index) => {
@@ -608,19 +508,6 @@ export function MapCanvas({
           })
         })
 
-        if (threadRoute.status === 'live' && !showMapLabels) {
-          threadRoute.overlay.annotations.forEach((annotation) => {
-            addMarker({
-              coordinates: annotation.coordinates,
-              content: createMarkerContent({
-                kind: 'route-label',
-                label: annotation.label,
-              }),
-              title: annotation.label,
-              zIndex: 6,
-            })
-          })
-        }
       } else {
         if (nextAnchor.coordinates) {
           addPolyline([position.coordinates, nextAnchor.coordinates], {

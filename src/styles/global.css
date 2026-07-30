@@ -484,10 +484,6 @@ h3 {
   transform: translate(-13px, -13px);
 }
 
-.spatial-marker-overlay > .spatial-marker--route-label {
-  transform: translate(-50%, -50%);
-}
-
 .spatial-marker-overlay > .spatial-marker--base {
   transform: translate(-16px, -16px);
 }
@@ -669,25 +665,6 @@ h3 {
   border-top-color: transparent;
   border-radius: 50%;
   content: "";
-}
-
-.spatial-marker--route-label {
-  color: var(--muted);
-  filter: none;
-  pointer-events: none;
-}
-
-.spatial-marker--route-label .spatial-marker__label {
-  max-width: 132px;
-  padding: 3px 6px;
-  border-color: rgba(255, 255, 255, 0.58);
-  border-radius: 7px;
-  color: #5f6962;
-  background: rgba(246, 244, 237, 0.78);
-  font-family: var(--serif);
-  font-size: 8px;
-  white-space: nowrap;
-  box-shadow: 0 3px 8px rgba(31, 43, 36, 0.08);
 }
 
 .spatial-marker--base .spatial-marker__symbol {

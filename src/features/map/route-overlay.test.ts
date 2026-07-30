@@ -131,9 +131,6 @@ describe('buildThreadRouteOverlay', () => {
     )
     expect(overlay.segments[1].path).toHaveLength(3)
     expect(overlay.segments[1].transitModes).toEqual(['TRAIN'])
-    expect(overlay.annotations.map(({ label }) => label)).toEqual([
-      'Higashi Avenue',
-    ])
   })
 
   it('collapses a live out-and-back walk into one shared path', () => {
