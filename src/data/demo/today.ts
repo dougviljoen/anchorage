@@ -394,6 +394,12 @@ const threads: Thread[] = [
         curatedPathFromPrevious: [...asanogawaLine].reverse(),
       },
     ],
+    returnPlan: {
+      kind: 'retrace',
+      turnaroundStopId: 'uchinada-coast',
+      summary:
+        'Walk back to Uchinada Station · Asanogawa Line to Kanazawa',
+    },
     travelModeToAnchor: 'WALK',
     phrases: [
       {

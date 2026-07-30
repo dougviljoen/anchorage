@@ -5,6 +5,7 @@ import { loadGoogleMaps } from './google-maps-loader'
 import { MapFallback } from './MapFallback'
 import { createMarkerContent } from './map-markers'
 import { planThreadRoute } from './thread-route-plan'
+import { buildThreadRouteOverlay } from './route-overlay'
 import type {
   MapMode,
   PositionState,
@@ -445,17 +446,13 @@ export function MapCanvas({
           threadRoute.status === 'live'
             ? threadRoute.overlay.segments
             : nextAnchor.coordinates
-              ? planThreadRoute(
-                  selectedThread,
-                  position.coordinates,
-                  nextAnchor.coordinates,
-                ).map((request) => ({
-                  path: request.fallbackPath,
-                  travelMode: request.travelMode,
-                  transitModes: request.input.transitModes,
-                  source: request.fallbackSource,
-                  roundTrip: false,
-                }))
+              ? buildThreadRouteOverlay(
+                  planThreadRoute(
+                    selectedThread,
+                    position.coordinates,
+                    nextAnchor.coordinates,
+                  ).map((request) => ({ request })),
+                ).segments
               : []
 
         routeSegments.forEach((segment) => {
@@ -482,36 +479,6 @@ export function MapCanvas({
               : segment.source === 'curated'
                 ? 0.76
                 : 0.58
-          const directionIcons: google.maps.IconSequence[] =
-            segment.roundTrip
-              ? [
-                  {
-                    icon: {
-                      path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                      fillColor: color,
-                      fillOpacity: opacity,
-                      strokeColor: '#f4f0e5',
-                      strokeOpacity: 0.9,
-                      strokeWeight: 1,
-                      scale: 2.6,
-                    },
-                    offset: '38%',
-                  },
-                  {
-                    icon: {
-                      path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-                      fillColor: color,
-                      fillOpacity: opacity,
-                      strokeColor: '#f4f0e5',
-                      strokeOpacity: 0.9,
-                      strokeWeight: 1,
-                      scale: 2.6,
-                    },
-                    offset: '62%',
-                  },
-                ]
-              : []
-
           addPolyline(segment.path, {
             strokeColor: '#f4f0e5',
             strokeOpacity: 0.92,
@@ -527,7 +494,6 @@ export function MapCanvas({
               strokeColor: color,
               strokeOpacity: opacity,
               strokeWeight: isTrain ? 3.5 : 3,
-              icons: directionIcons,
               zIndex: 4,
             })
             return
@@ -551,21 +517,27 @@ export function MapCanvas({
                 offset: '0',
                 repeat: isWalking ? '10px' : isBus ? '17px' : '13px',
               },
-              ...directionIcons,
             ],
             zIndex: 4,
           })
         })
 
         selectedThread.stops.forEach((stop, index) => {
+          const isTurnaround =
+            selectedThread.returnPlan?.kind === 'retrace' &&
+            selectedThread.returnPlan.turnaroundStopId === stop.id
+
           addMarker({
             coordinates: stop.coordinates,
             content: createMarkerContent({
               kind: 'stop',
               label: stop.title,
-              meta: stop.category,
+              meta: isTurnaround
+                ? `${stop.category} · turnaround`
+                : stop.category,
               index: index + 1,
               active: true,
+              turnaround: isTurnaround,
             }),
             title: stop.title,
             zIndex: 12,

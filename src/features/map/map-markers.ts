@@ -17,6 +17,7 @@ type MarkerContentOptions = {
   index?: number
   palette?: ThreadPalette
   active?: boolean
+  turnaround?: boolean
 }
 
 export function createMarkerContent({
@@ -26,10 +27,13 @@ export function createMarkerContent({
   index,
   palette = 'moss',
   active = false,
+  turnaround = false,
 }: MarkerContentOptions) {
   const root = document.createElement('div')
   root.className = `spatial-marker spatial-marker--${kind}${
     active ? ' is-active' : ''
+  }${
+    turnaround ? ' is-turnaround' : ''
   }`
 
   if (kind === 'current') {

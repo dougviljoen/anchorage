@@ -239,7 +239,6 @@ const collapseReciprocalSegments = (
           sourceRank[reciprocal.source] > sourceRank[segment.source]
             ? reciprocal.source
             : segment.source,
-        roundTrip: true,
       },
     ]
   })
@@ -279,9 +278,6 @@ export function buildThreadRouteOverlay(
   const estimatedModes = segments.flatMap((segment) =>
     segment.source === 'estimated' ? [segment.travelMode] : [],
   )
-  const roundTripModes = segments.flatMap((segment) =>
-    segment.roundTrip ? [segment.travelMode] : [],
-  )
   const steps = liveResponses.flatMap(({ route }) =>
     route.legs.flatMap((leg) => leg.steps),
   )
@@ -308,7 +304,6 @@ export function buildThreadRouteOverlay(
     liveModes: uniqueModes(liveModes),
     curatedModes: uniqueModes(curatedModes),
     estimatedModes: uniqueModes(estimatedModes),
-    roundTripModes: uniqueModes(roundTripModes),
     fullyLive:
       curatedModes.length === 0 && estimatedModes.length === 0,
     fetchedAt:

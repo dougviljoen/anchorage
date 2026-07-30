@@ -106,6 +106,17 @@ export type ThreadRouteWaypoint = {
   curatedPathFromPrevious?: Coordinates[]
 }
 
+export type ThreadReturnPlan =
+  | {
+      kind: 'retrace'
+      turnaroundStopId: Id
+      summary: string
+    }
+  | {
+      kind: 'loop' | 'alternate' | 'open-ended'
+      summary: string
+    }
+
 export type PhraseCard = {
   id: Id
   context: string
@@ -134,6 +145,7 @@ export type Thread = {
   tags: string[]
   stops: ThreadStop[]
   routeWaypoints?: ThreadRouteWaypoint[]
+  returnPlan?: ThreadReturnPlan
   travelModeToAnchor: TravelMode
   transitModesToAnchor?: TransitMode[]
   phrases: PhraseCard[]

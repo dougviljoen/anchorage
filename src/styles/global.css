@@ -653,12 +653,22 @@ h3 {
 }
 
 .spatial-marker--stop .spatial-marker__symbol {
+  position: relative;
   width: 26px;
   height: 26px;
   border-radius: 50%;
   color: #f8f4eb;
   background: var(--moss);
   transform: none;
+}
+
+.spatial-marker--stop.is-turnaround .spatial-marker__symbol::before {
+  position: absolute;
+  inset: -6px;
+  border: 1px solid rgba(41, 72, 58, 0.52);
+  border-top-color: transparent;
+  border-radius: 50%;
+  content: "";
 }
 
 .spatial-marker--route-label {
@@ -1192,6 +1202,29 @@ h3 {
 
 .sheet-stop > svg {
   color: var(--faint);
+}
+
+.sheet-return-plan {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 9px;
+  padding: 11px 0 3px;
+  border-top: 1px solid var(--line);
+}
+
+.sheet-return-plan small {
+  color: var(--faint);
+  font-size: 7px;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sheet-return-plan p {
+  color: var(--muted);
+  font-family: var(--serif);
+  font-size: 10px;
+  line-height: 1.4;
 }
 
 .sheet-primary {

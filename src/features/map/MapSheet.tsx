@@ -253,8 +253,6 @@ function ThreadOverview({
                 ` · ${modeSummary(threadRoute.overlay.estimatedModes)} estimated`}
             </>
           )}
-          {threadRoute.overlay.roundTripModes.length > 0 &&
-            ' · return follows the same route'}
         </p>
       )}
 
@@ -271,18 +269,31 @@ function ThreadOverview({
           <span>The thread</span>
           <small>Returns before {formatTime(nextAnchorTime)}</small>
         </div>
-        {thread.stops.map((stop, index) => (
-          <div className="sheet-stop" key={stop.id}>
-            <span>{String(index + 1).padStart(2, '0')}</span>
-            <div>
-              <strong>{stop.title}</strong>
-              <small>
-                {stop.category} · {formatDuration(stop.durationMinutes)}
-              </small>
+        {thread.stops.map((stop, index) => {
+          const isTurnaround =
+            thread.returnPlan?.kind === 'retrace' &&
+            thread.returnPlan.turnaroundStopId === stop.id
+
+          return (
+            <div className="sheet-stop" key={stop.id}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <div>
+                <strong>{stop.title}</strong>
+                <small>
+                  {stop.category} · {formatDuration(stop.durationMinutes)}
+                  {isTurnaround ? ' · turnaround' : ''}
+                </small>
+              </div>
+              <MapPin size={14} />
             </div>
-            <MapPin size={14} />
+          )
+        })}
+        {thread.returnPlan && (
+          <div className="sheet-return-plan">
+            <small>Return</small>
+            <p>{thread.returnPlan.summary}</p>
           </div>
-        ))}
+        )}
       </div>
 
       <button

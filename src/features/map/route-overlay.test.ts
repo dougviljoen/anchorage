@@ -97,7 +97,7 @@ describe('buildThreadRouteOverlay', () => {
     ])
   })
 
-  it('collapses a live out-and-back walk into one bidirectional path', () => {
+  it('collapses a live out-and-back walk into one shared path', () => {
     const request: ThreadRouteRequest = {
       ...walkingRequest,
       input: {
@@ -146,9 +146,14 @@ describe('buildThreadRouteOverlay', () => {
     expect(overlay.segments[0]).toMatchObject({
       travelMode: 'WALK',
       source: 'live',
-      roundTrip: true,
     })
-    expect(overlay.roundTripModes).toEqual(['WALK'])
+
+    const fallbackOverlay = buildThreadRouteOverlay([{ request }])
+    expect(fallbackOverlay.segments).toHaveLength(1)
+    expect(fallbackOverlay.segments[0]).toMatchObject({
+      travelMode: 'WALK',
+      source: 'estimated',
+    })
   })
 
   it('collapses reciprocal curated train legs', () => {
@@ -171,9 +176,7 @@ describe('buildThreadRouteOverlay', () => {
       travelMode: 'TRANSIT',
       transitModes: ['TRAIN'],
       source: 'curated',
-      roundTrip: true,
     })
-    expect(overlay.roundTripModes).toEqual(['TRANSIT'])
   })
 
   it('uses road-aligned provider geometry only as an estimated bus path', () => {
