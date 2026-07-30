@@ -53,19 +53,21 @@ const chooseAnnotations = (steps: LiveRouteStep[]): RouteAnnotation[] => {
 export type ThreadRouteResult = {
   request: ThreadRouteRequest
   response?: LiveRouteResponse
+  estimatedResponse?: LiveRouteResponse
 }
 
 const uniqueModes = (modes: TravelMode[]) => [...new Set(modes)]
 
-const liveSegment = (
+const routeSegment = (
   route: LiveRoute,
   travelMode: TravelMode,
+  source: ThreadRouteSegment['source'],
 ): ThreadRouteSegment | undefined => {
   try {
     const path = decodePolyline(route.encodedPolyline)
     if (path.length < 2) return undefined
 
-    return { path, travelMode, source: 'live' }
+    return { path, travelMode, source }
   } catch {
     return undefined
   }
@@ -74,20 +76,42 @@ const liveSegment = (
 export function buildThreadRouteOverlay(
   results: ThreadRouteResult[],
 ): ThreadRouteOverlay {
-  const segments = results.map(({ request, response }) => {
-    if (response) {
-      const segment = liveSegment(response.route, request.travelMode)
-      if (segment) return segment
-    }
+  const segments = results.map(
+    ({ request, response, estimatedResponse }) => {
+      if (response) {
+        const segment = routeSegment(
+          response.route,
+          request.travelMode,
+          'live',
+        )
+        if (segment) return segment
+      }
+      if (estimatedResponse) {
+        const segment = routeSegment(
+          estimatedResponse.route,
+          request.travelMode,
+          'estimated',
+        )
+        if (segment) return segment
+      }
 
-    return {
-      path: request.fallbackPath,
-      travelMode: request.travelMode,
-      source: 'estimated' as const,
-    }
-  })
+      return {
+        path: request.fallbackPath,
+        travelMode: request.travelMode,
+        source: 'estimated' as const,
+      }
+    },
+  )
   const liveResponses = results.flatMap(({ response }) =>
     response ? [response] : [],
+  )
+  const shapedResponses = results.flatMap(
+    ({ response, estimatedResponse }) =>
+      response
+        ? [response]
+        : estimatedResponse
+          ? [estimatedResponse]
+          : [],
   )
   const liveModes = segments.flatMap((segment) =>
     segment.source === 'live' ? [segment.travelMode] : [],
@@ -102,7 +126,7 @@ export function buildThreadRouteOverlay(
   return {
     segments,
     annotations: chooseAnnotations(steps),
-    encodedPolylines: liveResponses.map(
+    encodedPolylines: shapedResponses.map(
       ({ route }) => route.encodedPolyline,
     ),
     distanceMeters: liveResponses.reduce(
@@ -122,6 +146,6 @@ export function buildThreadRouteOverlay(
     estimatedModes: uniqueModes(estimatedModes),
     fullyLive: estimatedModes.length === 0,
     fetchedAt:
-      liveResponses.at(-1)?.fetchedAt ?? new Date().toISOString(),
+      shapedResponses.at(-1)?.fetchedAt ?? new Date().toISOString(),
   }
 }

@@ -27,6 +27,10 @@ export function planThreadRoute(
     ...thread.stops.map((stop) => stop.travelModeFromPrevious),
     thread.travelModeToAnchor,
   ]
+  const transitModes = [
+    ...thread.stops.map((stop) => stop.transitModesFromPrevious),
+    thread.transitModesToAnchor,
+  ]
   const requests: ThreadRouteRequest[] = []
 
   let edgeIndex = 0
@@ -56,7 +60,10 @@ export function planThreadRoute(
         travelMode,
         languageCode: 'en',
         ...(travelMode === 'TRANSIT'
-          ? { transitPreference: 'LESS_WALKING' as const }
+          ? {
+              transitPreference: 'LESS_WALKING' as const,
+              transitModes: transitModes[edgeIndex],
+            }
           : {}),
       },
       fallbackPath,

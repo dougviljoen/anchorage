@@ -34,6 +34,31 @@ describe('Google server request contracts', () => {
     ).toThrow('Transit routes do not support intermediate stops')
   })
 
+  it('keeps explicit train and rail preferences on transit routes', () => {
+    expect(
+      parseComputeRouteRequest({
+        origin,
+        destination,
+        travelMode: 'TRANSIT',
+        transitModes: ['TRAIN', 'RAIL'],
+      }),
+    ).toMatchObject({
+      travelMode: 'TRANSIT',
+      transitModes: ['TRAIN', 'RAIL'],
+    })
+  })
+
+  it('rejects transit preferences on walking routes', () => {
+    expect(() =>
+      parseComputeRouteRequest({
+        origin,
+        destination,
+        travelMode: 'WALK',
+        transitModes: ['TRAIN'],
+      }),
+    ).toThrow('transitModes requires TRANSIT travel mode')
+  })
+
   it('requires a bounded place-search geography', () => {
     expect(() =>
       parseSearchPlacesRequest({ query: 'kissaten' }),

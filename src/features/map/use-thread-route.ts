@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Anchor, Coordinates, Thread } from '../../domain/types'
-import { getTravelIntelligenceGateway } from '../../services/travel-intelligence'
+import {
+  getTravelIntelligenceGateway,
+  type ComputeRouteInput,
+} from '../../services/travel-intelligence'
 import { buildThreadRouteOverlay } from './route-overlay'
 import type { ThreadRouteState } from './map-types'
 import { planThreadRoute } from './thread-route-plan'
@@ -12,6 +15,15 @@ type RouteResult = {
 
 const coordinateKey = ({ latitude, longitude }: Coordinates) =>
   `${latitude.toFixed(5)},${longitude.toFixed(5)}`
+
+const asRoadAlignedFallback = (
+  input: ComputeRouteInput,
+): ComputeRouteInput => ({
+  origin: input.origin,
+  destination: input.destination,
+  travelMode: 'DRIVE',
+  languageCode: input.languageCode,
+})
 
 export function useThreadRoute({
   thread,
@@ -36,9 +48,11 @@ export function useThreadRoute({
           coordinateKey(origin),
           ...thread.stops.flatMap((stop) => [
             stop.travelModeFromPrevious,
+            stop.transitModesFromPrevious?.join(',') ?? '',
             coordinateKey(stop.coordinates),
           ]),
           thread.travelModeToAnchor,
+          thread.transitModesToAnchor?.join(',') ?? '',
           coordinateKey(destination),
         ].join('|')
       : ''
@@ -64,16 +78,38 @@ export function useThreadRoute({
           return {
             request,
             response: await gateway.computeRoute(request.input),
+            estimatedResponse: undefined,
           }
         } catch {
-          return { request, response: undefined }
+          if (request.travelMode === 'TRANSIT') {
+            try {
+              return {
+                request,
+                response: undefined,
+                estimatedResponse: await gateway.computeRoute(
+                  asRoadAlignedFallback(request.input),
+                ),
+              }
+            } catch {
+              // The composed connector remains as the final fallback.
+            }
+          }
+
+          return {
+            request,
+            response: undefined,
+            estimatedResponse: undefined,
+          }
         }
       }),
     ).then((responses) => {
       if (!active) return
-      const hasLiveSegment = responses.some((response) => response.response)
+      const hasRouteGeometry = responses.some(
+        ({ response, estimatedResponse }) =>
+          response || estimatedResponse,
+      )
 
-      if (!hasLiveSegment) {
+      if (!hasRouteGeometry) {
         setResult({ key: requestKey, state: { status: 'static' } })
         return
       }

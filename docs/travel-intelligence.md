@@ -18,10 +18,13 @@ intermediates because the Routes API does not support them.
 Each thread records the travel mode into every stop and from its final stop to
 the next anchor. Continuous walking legs are grouped into one efficient request;
 transit legs are requested separately because Google does not accept transit
-waypoints. Until a response arrives, the map retains its composed geometry. If
-the provider has no transit geometry, Anchorage keeps that connector visibly
-estimated while rendering successful walking legs against the live street
-network.
+waypoints. Transit legs can explicitly prefer bus, subway, train, light rail or
+the broader rail family rather than collapsing every service into one generic
+mode. Until a response arrives, the map retains its composed geometry. If the
+provider has no transit geometry, Anchorage keeps that connector visibly
+estimated and asks for road-aligned fallback geometry rather than drawing a
+misleading straight chord. Successful walking legs still render against the
+live street network.
 
 ### `search-places`
 

@@ -4,6 +4,12 @@ export type LatLng = {
 }
 
 export type RouteTravelMode = 'WALK' | 'DRIVE' | 'BICYCLE' | 'TRANSIT'
+export type TransitTravelMode =
+  | 'BUS'
+  | 'SUBWAY'
+  | 'TRAIN'
+  | 'LIGHT_RAIL'
+  | 'RAIL'
 
 export type ComputeRouteRequest = {
   origin: LatLng
@@ -13,6 +19,7 @@ export type ComputeRouteRequest = {
   languageCode: string
   departureTime?: string
   transitPreference?: 'LESS_WALKING' | 'FEWER_TRANSFERS'
+  transitModes: TransitTravelMode[]
 }
 
 export type SearchPlacesRequest = {
@@ -79,6 +86,14 @@ const parseLanguageCode = (value: unknown) => {
   return value
 }
 
+const transitTravelModes = new Set<TransitTravelMode>([
+  'BUS',
+  'SUBWAY',
+  'TRAIN',
+  'LIGHT_RAIL',
+  'RAIL',
+])
+
 export function parseComputeRouteRequest(
   value: unknown,
 ): ComputeRouteRequest {
@@ -132,6 +147,29 @@ export function parseComputeRouteRequest(
     )
   }
 
+  const transitModesValue = value.transitModes ?? []
+  if (!Array.isArray(transitModesValue)) {
+    throw new RequestValidationError('transitModes must be an array')
+  }
+  if (
+    transitModesValue.length > transitTravelModes.size ||
+    transitModesValue.some(
+      (mode) =>
+        typeof mode !== 'string' ||
+        !transitTravelModes.has(mode as TransitTravelMode),
+    )
+  ) {
+    throw new RequestValidationError('transitModes contains an invalid mode')
+  }
+  const transitModes = [
+    ...new Set(transitModesValue as TransitTravelMode[]),
+  ]
+  if (transitModes.length > 0 && travelMode !== 'TRANSIT') {
+    throw new RequestValidationError(
+      'transitModes requires TRANSIT travel mode',
+    )
+  }
+
   return {
     origin: parseLatLng(value.origin, 'origin'),
     destination: parseLatLng(value.destination, 'destination'),
@@ -142,6 +180,7 @@ export function parseComputeRouteRequest(
     languageCode: parseLanguageCode(value.languageCode),
     departureTime,
     transitPreference,
+    transitModes,
   }
 }
 

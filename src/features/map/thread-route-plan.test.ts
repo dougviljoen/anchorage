@@ -32,7 +32,11 @@ describe('planThreadRoute', () => {
         ...thread,
         stops: [
           { ...thread.stops[0], travelModeFromPrevious: 'TRANSIT' },
-          { ...thread.stops[1], travelModeFromPrevious: 'TRANSIT' },
+          {
+            ...thread.stops[1],
+            travelModeFromPrevious: 'TRANSIT',
+            transitModesFromPrevious: ['TRAIN'],
+          },
           { ...thread.stops[2], travelModeFromPrevious: 'WALK' },
         ],
         travelModeToAnchor: 'TRANSIT',
@@ -52,5 +56,6 @@ describe('planThreadRoute', () => {
         .filter((request) => request.travelMode === 'TRANSIT')
         .every((request) => request.input.intermediates === undefined),
     ).toBe(true)
+    expect(requests[1].input.transitModes).toEqual(['TRAIN'])
   })
 })

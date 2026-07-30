@@ -180,6 +180,7 @@ const threads: Thread[] = [
       },
     ],
     travelModeToAnchor: 'TRANSIT',
+    transitModesToAnchor: ['BUS'],
     phrases: [
       {
         id: 'local-maker',
@@ -263,9 +264,9 @@ const threads: Thread[] = [
     title: 'Sea at the end of the line',
     eyebrow: 'Go while it’s good',
     summary:
-      'A local train, a bracing harbour walk and an old bathhouse before the weather turns.',
+      'A local bus, a bracing harbour walk and an old bathhouse before the weather turns.',
     whyNow:
-      'Today is your only clear western horizon before Kyoto. The 12:18 train makes the whole outing fit without rushing dinner.',
+      'Today is your only clear western horizon before Kyoto. The 12:18 bus makes the whole outing fit without rushing dinner.',
     durationMinutes: 295,
     walkingMinutes: 67,
     walkingKm: 4.1,
@@ -275,16 +276,17 @@ const threads: Thread[] = [
     weatherNote: 'Clearing west · sunset 16:46',
     returnNote: 'Back in Kanazawa at 17:22',
     fallback:
-      'If the coastal train is delayed, leave at Ono and follow the shorter canal route.',
+      'If the bus is delayed, leave at Ono and follow the shorter canal route.',
     palette: 'indigo',
-    tags: ['scenic train', 'coast', 'sentō'],
+    tags: ['local bus', 'coast', 'sentō'],
     stops: [
       {
-        id: 'local-train',
+        id: 'local-bus',
         order: 1,
-        title: 'Hokuriku local line',
-        category: 'Scenic train',
+        title: 'Bus west to Ono',
+        category: 'Local bus',
         travelModeFromPrevious: 'TRANSIT',
+        transitModesFromPrevious: ['BUS'],
         durationMinutes: 42,
         travelMinutesFromPrevious: 18,
         note: 'A slow change from city edge to open sky.',
@@ -298,6 +300,7 @@ const threads: Thread[] = [
         title: 'Ono harbour',
         category: 'Waterside walk',
         travelModeFromPrevious: 'TRANSIT',
+        transitModesFromPrevious: ['BUS'],
         durationMinutes: 75,
         travelMinutesFromPrevious: 5,
         note: 'Warehouses, working boats and the horizon opening beyond the river mouth.',
@@ -313,13 +316,14 @@ const threads: Thread[] = [
         travelModeFromPrevious: 'WALK',
         durationMinutes: 60,
         travelMinutesFromPrevious: 12,
-        note: 'A warm, ordinary neighbourhood ending before the train home.',
+        note: 'A warm, ordinary neighbourhood ending before the bus home.',
         openingNote: 'Open from 14:00 · cash only',
         coordinates: { latitude: 36.6041, longitude: 136.608 },
         evidence: [officialEvidence],
       },
     ],
     travelModeToAnchor: 'TRANSIT',
+    transitModesToAnchor: ['BUS'],
     phrases: [
       {
         id: 'towel',

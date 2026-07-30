@@ -149,9 +149,17 @@ export default {
         if (input.departureTime) {
           requestBody.departureTime = input.departureTime
         }
-        if (input.transitPreference) {
+        if (
+          input.transitPreference ||
+          input.transitModes.length > 0
+        ) {
           requestBody.transitPreferences = {
-            routingPreference: input.transitPreference,
+            ...(input.transitPreference
+              ? { routingPreference: input.transitPreference }
+              : {}),
+            ...(input.transitModes.length > 0
+              ? { allowedTravelModes: input.transitModes }
+              : {}),
           }
         }
 

@@ -44,7 +44,19 @@ describe('buildThreadRouteOverlay', () => {
           },
         },
       },
-      { request: transitRequest },
+      {
+        request: transitRequest,
+        estimatedResponse: {
+          provider: 'google',
+          fetchedAt: '2026-07-30T04:00:01Z',
+          route: {
+            distanceMeters: 5_600,
+            durationSeconds: 1_200,
+            encodedPolyline: '_p~iF~ps|U_ulLnnqC_mqNvxq`@',
+            legs: [],
+          },
+        },
+      },
     ])
 
     expect(overlay.fullyLive).toBe(false)
@@ -54,5 +66,6 @@ describe('buildThreadRouteOverlay', () => {
       'live',
       'estimated',
     ])
+    expect(overlay.segments[1].path).toHaveLength(3)
   })
 })

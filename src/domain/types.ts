@@ -76,6 +76,12 @@ export type ThreadMode = 'drift' | 'follow' | 'go'
 export type Atmosphere = 'quiet' | 'settled' | 'lively'
 export type ThreadPalette = 'clay' | 'moss' | 'indigo'
 export type TravelMode = 'WALK' | 'DRIVE' | 'BICYCLE' | 'TRANSIT'
+export type TransitMode =
+  | 'BUS'
+  | 'SUBWAY'
+  | 'TRAIN'
+  | 'LIGHT_RAIL'
+  | 'RAIL'
 
 export type ThreadStop = {
   id: Id
@@ -83,6 +89,7 @@ export type ThreadStop = {
   title: string
   category: string
   travelModeFromPrevious: TravelMode
+  transitModesFromPrevious?: TransitMode[]
   durationMinutes: number
   travelMinutesFromPrevious: number
   note: string
@@ -119,6 +126,7 @@ export type Thread = {
   tags: string[]
   stops: ThreadStop[]
   travelModeToAnchor: TravelMode
+  transitModesToAnchor?: TransitMode[]
   phrases: PhraseCard[]
   evidence: Evidence[]
 }
